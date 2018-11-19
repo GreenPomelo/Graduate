@@ -90,10 +90,10 @@ export default class score extends wepy.page {
                   element.result >= 90
                     ? 1
                     : element.result >= 75
-                      ? 2
-                      : element.result >= 60
-                        ? 3
-                        : 4
+                    ? 2
+                    : element.result >= 60
+                    ? 3
+                    : 4
               });
             }
           });
