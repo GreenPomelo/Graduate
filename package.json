@@ -25,7 +25,10 @@
     ]
   },
   "dependencies": {
+    "deep-extend": "^0.6.0",
+    "lodash": "^4.17.11",
     "moment": "^2.20.1",
+    "randomatic": "^3.1.1",
     "wepy": "^1.7.1",
     "wepy-async-function": "^1.4.4"
   },
