@@ -1,0 +1,456 @@
+<template lang="pug">
+view.login
+  view.logo-wrapper
+    image.logo(src="https://static.airbob.org/image/page/login/logo.png" mode="widthFix")
+
+  view.login-wrapper
+    view.input-wrapper
+      input.phone.fadeIn(wx:if="{{step === 'GET_CODE' || step === 'VERIFY_CODE' || step === 'LOGIN' || step === 'UNDER_GRADUATE_BIND'}}" @input="handlePhoneInput" maxlength="11"
+        placeholder="{{ step === 'UNDER_GRADUATE_BIND' ? '本科生小程序绑定的手机号' : '请输入电话号码'}}" placeholder-style="{{placeholderStyles}}")
+      input.username.fadeIn(wx:if="{{step === 'REGISTER'}}" @input="handleStudentIdInput" placeholder="请输入一卡通卡号" placeholder-style="{{placeholderStyles}}")
+
+    view.input-wrapper
+      input.code.fadeIn(class="{{step === 'VERIFY_CODE' ? 'active' : '' }}" wx:if="{{step === 'GET_CODE' || step === 'VERIFY_CODE'}}" @input="handleCodeInput" disabled="{{step === 'GET_CODE' ? true : false}}" focus="{{step === 'VERIFY_CODE' ? true : false}}" placeholder="请输入验证码" placeholder-style="{{placeholderStyles}}")
+      view.re-obtain(wx:if="{{step === 'VERIFY_CODE'}}" @tap="reGetVerificationCode") 重新获取 {{remainTime === 0 ? '' : remainTime}}
+      input.password.fadeIn(wx:if="{{step === 'REGISTER' || step === 'LOGIN'}}" @input="handlePasswordInput" password="true" placeholder="智慧校园系统密码" placeholder-style="{{placeholderStyles}}")
+      input.fadeIn(wx:if="{{step === 'UNDER_GRADUATE_BIND'}}" @input="handleOldPasswordInput" password placeholder="本科生小程序密码" placeholder-style="{{placeholderStyles}}")
+
+    view.input-wrapper(wx:if="{{step === 'UNDER_GRADUATE_BIND'}}")
+      input.username.fadeIn( @input="handleStudentIdInput" placeholder="研究生一卡通卡号" placeholder-style="{{placeholderStyles}}")
+
+    view.input-wrapper(wx:if="{{step === 'UNDER_GRADUATE_BIND'}}")
+      input.password.fadeIn( @input="handlePasswordInput" password="true" placeholder="研究生智慧校园系统密码" placeholder-style="{{placeholderStyles}}")
+
+    view.input-wrapper
+      button.btn.fadeIn(open-type="getUserInfo" @tap="getVerificationCode" @getuserinfo="handleGetUserInfo" class="{{isBtnActive ? 'active' : ''}}" wx:if="{{step === 'GET_CODE'}}") 获取验证码
+      view.btn(class="{{isBtnActive ? 'active' : ''}}" wx:if="{{step === 'VERIFY_CODE'}}" @tap="verifyCode") 下一步
+      view.btn.fadeIn(class="{{isBtnActive ? 'active' : ''}}" wx:if="{{step === 'REGISTER'}}" @tap="register") 注册
+      view.btn.fadeIn(class="{{isBtnActive ? 'active' : ''}}" wx:if="{{step === 'LOGIN'}}" @tap="login") 登录
+      view.btn.fadeIn(class="{{isBtnActive ? 'active' : ''}}" wx:if="{{step === 'UNDER_GRADUATE_BIND'}}" @tap="reBind") 重新绑定
+
+    view.protocol.fadeIn(wx:if="{{step === 'GET_CODE' || step === 'VERIFY_CODE'}}")
+      view.radio(class="{{isAgreed ? '' : 'inactive'}}" @tap="agreeProtocol")
+        view.round
+      | 阅读并同意
+      span.link 《南邮小程序用户协议》
+
+    view.toLogin.fadeIn(wx:if="{{step === 'GET_CODE' || step === 'VERIFY_CODE'}}" @tap="toLogin")
+      view.text 已经注册，点此登录
+    view.toLogin.fadeIn(wx:if="{{step === 'GET_CODE' || step === 'VERIFY_CODE'}}" @tap="toUnderGraduateBind")
+      view.text 南邮本科生升入研究生，点此绑定
+    view.toLogin.fadeIn(wx:if="{{step === 'LOGIN' || step === 'UNDER_GRADUATE_BIND'}}" @tap="toRegister")
+      view.text 未注册，点此注册
+
+  view.studio-wrapper
+    image.logo(src="https://static.airbob.org/image/page/login/pomeloLogo.png" mode="widthFix")
+    text.desc 青柚工作室 开发
+</template>
+
+<script>
+import wepy from "wepy";
+import { api } from "../utils/api.js";
+
+const GET_CODE = `GET_CODE`;
+const VERIFY_CODE = `VERIFY_CODE`;
+const REGISTER = `REGISTER`;
+const LOGIN = `LOGIN`;
+const UNDER_GRADUATE_BIND = `UNDER_GRADUATE_BIND`;
+
+export default class Login extends wepy.page {
+  config = {
+    navigationBarTitleText: "",
+    navigationBarBackgroundColor: "#ed85a5",
+    navigationBarTextStyle: "white"
+  };
+
+  data = {
+    placeholderStyles: `
+      font-size: 26rpx;
+      color: #fff;
+      letter-spacing: 1rpx;
+      text-align: center;
+    `,
+    requestUrl: "",
+    phone: "",
+    code: "",
+    studentId: "", // 研究生一卡通卡号
+    password: "", // 智慧校园密码
+    oldPassword: "", // 本科生小程序密码
+    wxInfo: {},
+    step: GET_CODE, // `GET_CODE` 是获取验证码，`VERIFY_CODE` 是验证验证码，`REGISTER` 是注册，`LOGIN` 是登录
+    remainTime: 60,
+    isBtnActive: false,
+    isAgreed: true
+  };
+
+  methods = {
+    handlePhoneInput(event) {
+      const { value } = event.detail;
+      if (value.length < 11) {
+        this.isBtnActive = false;
+      } else {
+        if (/^1\d{10}$/.test(value)) {
+          this.phone = value;
+          this.isBtnActive = true;
+        }
+      }
+    },
+
+    handleCodeInput(event) {
+      const { value } = event.detail;
+      if (value.length === 0) {
+        this.isBtnActive = false;
+      } else {
+        this.code = value;
+        this.isBtnActive = true;
+      }
+    },
+
+    handleStudentIdInput(event) {
+      const { value } = event.detail;
+      this.studentId = value;
+      if (this.isStudentIdAndPasswordNotEmpty()) {
+        this.isBtnActive = true;
+      }
+    },
+
+    handlePasswordInput(event) {
+      const { value } = event.detail;
+      this.password = value;
+      if (this.isStudentIdAndPasswordNotEmpty()) {
+        this.isBtnActive = true;
+      }
+    },
+
+    handleOldPasswordInput(event) {
+      const { value } = event.detail;
+      this.oldPassword = value;
+    },
+
+    agreeProtocol() {
+      this.isAgreed = !this.isAgreed;
+    },
+
+    toLogin() {
+      this.step = LOGIN;
+      console.log(this.step);
+    },
+
+    toUnderGraduateBind() {
+      this.step = UNDER_GRADUATE_BIND;
+    },
+
+    toRegister() {
+      this.step = GET_CODE;
+    },
+
+    handleGetUserInfo({ detail }) {
+      // 获取 微信用户信息
+      const {
+        userInfo: { nickName, gender, avatarUrl }
+      } = detail;
+
+      this.wxInfo = { avatarUrl, gender, nickName };
+      this.$apply();
+    },
+
+    getVerificationCode() {
+      if (!this.isAgreed) {
+        wepy.showToast({
+          title: "请同意用户协议",
+          icon: "none",
+          duration: 2000
+        });
+      }
+      if (!this.isBtnActive || !this.isAgreed) return;
+
+      this.requestForCaptcha();
+
+      this.isBtnActive = false;
+      this.step = VERIFY_CODE;
+      this.$apply();
+
+      setInterval(this.tickTick.bind(this), 1000);
+    },
+
+    reGetVerificationCode() {
+      if (this.remainTime > 0 || !this.isAgreed) return;
+
+      this.requestForCaptcha();
+
+      this.remainTime = 60;
+    },
+
+    async verifyCode() {
+      if (!this.isBtnActive || !this.isAgreed) return;
+
+      const {
+        data: { success, ...err }
+      } = await wepy.request({
+        url: `${this.requestUrl}checkCaptcha`,
+        data: {
+          code: this.code
+        }
+      });
+
+      if (success) {
+        this.isBtnActive = false;
+        this.step = REGISTER;
+        this.$apply();
+      } else {
+        console.error(err);
+      }
+    },
+
+    async register() {
+      if (!this.isBtnActive) return;
+      const { avatarUrl, gender, nickName } = this.wxInfo;
+
+      const {
+        data: { success, ...err }
+      } = await wepy.request({
+        url: `${this.requestUrl}registerForPostGraduate`,
+        method: `POST`,
+        data: {
+          phoneNumber: this.phone,
+          password: this.password,
+          studentId: this.studentId,
+          avatarUrl,
+          gender,
+          nickName
+        }
+      });
+      this.isBtnActive = false;
+      this.$apply();
+
+      if (success) {
+        wepy.reLaunch({ url: "index" });
+        wepy.removeStorageSync("shouldBind");
+      } else {
+        console.error(err);
+        wepy.showToast({ title: err.errMsg, icon: "none", duration: 2000 });
+      }
+    },
+
+    async login() {
+      if (!this.isBtnActive) return;
+      if (this.phone === `` || this.password === ``) return;
+
+      const {
+        data: { success, ...err }
+      } = await wepy.request({
+        url: `${this.requestUrl}bind`,
+        method: `POST`,
+        data: {
+          phoneNumber: this.phone,
+          password: this.password
+        }
+      });
+
+      if (success) {
+        wepy.reLaunch({ url: "index" });
+        wepy.removeStorageSync("shouldBind");
+      } else {
+        wepy.showToast({ title: err.errMsg, icon: "none", duration: 2000 });
+        console.error(err);
+      }
+    },
+
+    async reBind() {
+      if (!this.isBtnActive) return;
+      if (this.phone === `` || this.password === ``) return;
+
+      const {
+        data: { data, success, ...err }
+      } = await wepy.request({
+        url: `${this.requestUrl}postGraduate`,
+        method: `POST`,
+        data: {
+          phoneNumber: this.phone, // 本科生小程序手机号
+          password: this.oldPassword, // 本科生小程序密码
+          myAccount: this.studentId, // 研究生一卡通卡号
+          myPassword: this.password // 智慧校园密码
+        }
+      });
+
+      if (success) {
+        if (data) {
+          this.methods.login.call(this);
+        }
+      } else {
+        wepy.showToast({ title: err.errMsg, icon: "none", duration: 2000 });
+        console.error(err);
+      }
+    }
+  };
+
+  isStudentIdAndPasswordNotEmpty() {
+    return this.studentId && this.password;
+  }
+
+  tickTick() {
+    if (this.step === VERIFY_CODE) {
+      this.remainTime = Math.max(this.remainTime - 1, 0);
+      this.$apply();
+    }
+  }
+
+  async requestForCaptcha() {
+    const {
+      data: { success, ...err }
+    } = await wepy.request({
+      url: `${this.requestUrl}sendSms`,
+      method: `POST`,
+      data: {
+        phoneNumber: this.phone
+      }
+    });
+    if (!success) {
+      wepy.showToast({ title: err.errMsg, icon: "none", duration: 2000 });
+      console.error(err);
+    }
+  }
+
+  setRequestUrl() {
+    const { requestUrl } = this.$parent.globalData;
+    this.requestUrl = requestUrl;
+  }
+
+  async getToken() {
+    // 获取 wxCode
+    const { code: wxCode } = await wepy.login();
+    // 获取 token
+    let {
+      data: { data: token }
+    } = await api.token(wxCode);
+    wepy.setStorageSync("token", token);
+  }
+
+  onShow() {
+    this.getToken();
+    this.setRequestUrl();
+  }
+
+  onLoad() {
+    this.getToken();
+    this.setRequestUrl();
+  }
+}
+</script>
+
+<style lang="stylus" scoped>
+@import '../assets/stylus/main'
+@import '../assets/stylus/_animate'
+
+.login
+  position relative
+  height 100vh
+  padding-bottom 40rpx
+  color main-color
+  overflow hidden
+  box-sizing border-box
+  background-image url('https://static.airbob.org/image/page/login/bg.png')
+  background-size cover
+  .logo-wrapper
+    display flex
+    justify-content center
+    .logo
+      width 60%
+  .login-wrapper
+    display flex
+    flex-wrap wrap
+    .input-wrapper
+      display flex
+      width 100%
+      justify-content center
+      input,
+      .btn
+        margin-bottom 22rpx
+        width 430rpx
+        height 64rpx
+        font-size 26rpx
+        color #fff
+        letter-spacing 1rpx
+        text-align center
+        border 1rpx solid rgba(188, 188, 188, 0.2)
+        border-radius 20rpx
+        background rgba(255, 255, 255, 0.15)
+      .code
+        &.active
+          width 250rpx
+          border-right none
+          border-radius 20rpx 0 0 20rpx
+      .re-obtain
+        display inline-block
+        padding-top 12rpx
+        width 180rpx
+        height 67rpx
+        font-size 26rpx
+        color #ebebeb
+        letter-spacing 1rpx
+        text-align center
+        border 1rpx solid rgba(188, 188, 188, 0.2)
+        border-left 1rpx solid rgba(255, 255, 255, 0.8)
+        border-radius 0 20rpx 20rpx 0
+        box-sizing border-box
+        background rgba(255, 255, 255, 0.4)
+      .btn
+        display flex
+        justify-content center
+        align-items center
+        background #b8b8b8
+        &.active
+          background #4bb2f2
+        &::after
+          border none
+    .protocol
+      display flex
+      padding 20rpx
+      width 100%
+      font-size desc-font-size
+      font-weight 300
+      justify-content center
+      align-items center
+      .radio
+        display flex
+        margin-right 8rpx
+        // margin 8rpx
+        width 20rpx
+        height 20rpx
+        justify-content center
+        align-items center
+        border 1rpx solid #1a1a1a
+        border-radius 50%
+        &.inactive
+          .round
+            display none
+        .round
+          width 12rpx
+          height 12rpx
+          border-radius 50%
+          background #1a1a1a
+      .link
+        color #00558A
+        text-decoration underline
+    .toLogin
+      padding 20rpx
+      width 100%
+      text-align center
+      font-size desc-font-size
+      color #00558A
+      text-decoration underline
+  .studio-wrapper
+    display flex
+    position absolute
+    width 100%
+    bottom 36rpx
+    justify-content center
+    align-items center
+    .logo
+      width 19rpx
+      height 21rpx
+    .desc
+      margin-left 8rpx
+      font-size desc-font-size
+      color #fff
+</style>

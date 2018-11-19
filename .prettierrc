@@ -1,0 +1,10 @@
+{
+  "overrides": [
+    {
+      "files": "*.wpy",
+      "options": {
+        "parser": "babylon"
+      }
+    }
+  ]
+}

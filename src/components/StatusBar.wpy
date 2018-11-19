@@ -1,0 +1,56 @@
+<template lang="pug">
+view.status-bar( @tap="navigateTo('message')")
+  view.avatar-wrapper
+    open-data(type="userAvatarUrl")
+  view.info-wrapper
+    view.todo
+      text 你有{{todoCounts}}条通知待查看
+    view.now
+      text.date {{date}}
+      text.day {{day}}
+</template>
+
+<script>
+import wepy from "wepy";
+import navigateMixin from "@/mixins/navigate";
+
+export default class StatusBar extends wepy.component {
+  props = {
+    todoCounts: Number,
+    date: String,
+    day: String
+  };
+
+  mixins = [navigateMixin];
+}
+</script>
+
+<style lang="stylus" scoped>
+@import '../assets/stylus/main'
+
+.status-bar
+  display flex
+  padding 0 36rpx
+  height status-bar-height
+  justify-content space-between
+  align-items center
+  box-shadow status-bar-shadow
+  background status-bar-bg-color
+
+.avatar-wrapper
+  {avatar-size}
+  border-radius 50%
+  overflow hidden
+
+.info-wrapper
+  text-align right
+  .todo
+    font-size title-font-size
+    font-weight 700
+    color main-color
+  .now
+    font-size sub-font-size
+    color sub-color
+    .date
+      margin-right 20rpx
+</style>

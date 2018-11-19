@@ -1,0 +1,142 @@
+<template lang="pug">
+view.book(animation="{{bookId === book.bookId?animationData:''}}")
+  view.booktop
+    view.bookname {{book.bookName}}
+    view.author {{'作者：' + book.author}}
+    view.shouldDate
+      span 应归还日期
+      | {{book.returnDate}}
+      image(src='https://static.airbob.org/image/page/library/down.png', @tap='showMore({{ book.bookId }})', animation="{{ bookId === book.bookId?imageR:'' }}")
+  view.bookfont(animation="{{bookId === book.bookId?bookData:''}}")
+    view.bookData
+      view 出版社
+      view {{book.press}}
+    view.bookData
+      view 所属分类
+      view {{book.type}}
+    view.bookData
+      view ISBN
+      view {{book.ISBN}}
+    view.bookData
+      view 价格
+      view {{book.price}}
+</template>
+
+<script>
+import wepy from "wepy";
+
+export default class LibraryCard extends wepy.component {
+  props = {
+    book: {
+      type: String,
+      default: null
+    }
+  };
+
+  data = {
+    bookId: "",
+    bookData: {},
+    animationData: {},
+    imageR: {},
+    book: {},
+    more: "no"
+  };
+
+  methods = {
+    showMore(id) {
+      this.bookId = id;
+      let h = "160rpx";
+      let op = "0";
+      let R = 0;
+      if (this.more === "no") {
+        h = "300rpx";
+        op = "1";
+        R = "180";
+        this.more = "show";
+      } else if (this.more === "show") {
+        h = "160rpx";
+        op = "0";
+        R = "0";
+        this.more = "no";
+      }
+      let animation = wepy.createAnimation({
+        duration: 200,
+        timingFunction: "ease"
+      });
+      let showData = wepy.createAnimation({
+        duration: 200,
+        timingFunction: "ease"
+      });
+      let imageR = wepy.createAnimation({
+        duration: 200,
+        timingFunction: "ease"
+      });
+      animation.height(h).step();
+      this.animationData = animation;
+      showData.opacity(op).step();
+      this.bookData = showData;
+      imageR.rotate(R).step();
+      this.imageR = imageR;
+    }
+  };
+}
+</script>
+
+
+<style lang="stylus" scoped>
+.book
+  width 625rpx
+  height 160rpx
+  padding-left 35rpx
+  padding-top 37rpx
+  padding-bottom 30rpx
+  margin-bottom 40rpx
+  background-color #fff
+  box-shadow 0rpx -4rpx 20rpx 0rpx rgba(11, 3, 5, 0.1)
+  border-radius 20rpx
+  display flex
+  flex-direction column
+  justify-content space-between
+  align-items flex-start
+  .booktop
+    height 155rpx
+    .bookname
+      font-family PingFangSC-Medium
+      font-size 36rpx
+      color #1b1b1b
+    .author
+      font-family PingFangSC-Light
+      font-size 26rpx
+      color #8b8b8b
+    .shouldDate
+      font-family PingFangSC-Light
+      font-size 26rpx
+      color #005fce
+      width 595rpx
+      span
+        color #8b8b8b
+      image
+        width 31rpx
+        height 27rpx
+        opacity 0.5
+        float right
+        margin-top 6rpx
+  .bookfont
+    height 160rpx
+    border-top solid 1px #d2d2d2
+    opacity 0
+    display flex
+    flex-direction column
+    justify-content space-around
+    align-items center
+    width 595rpx
+    padding-top 15rpx
+    .bookData
+      font-family PingFangSC-Light
+      font-size 26rpx
+      color #2b2b2b
+      width 100%
+      display flex
+      justify-content space-between
+      align-items center
+</style>

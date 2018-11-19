@@ -1,0 +1,178 @@
+<template lang="pug">
+view.index
+  status-bar( :todoCounts.sync="todoCounts" :date.sync="date" :day.sync="day")
+  remind( :courses.sync="courses")
+  campus-card( :record.sync="yktRecord" :balance.sync="balance" :date.sync="date" :serviceable.sync="campusCardServiceable")
+  library( :borrowingBooks.sync="borrowingBooks" :borrowedBooks.sync="borrowedBooks" :seats.sync="seats")
+</template>
+
+<script>
+import wepy from "wepy";
+
+import moment from "moment";
+import "moment/locale/zh-cn";
+moment.locale("zh-cn");
+
+import StatusBar from "@/components/StatusBar";
+import Remind from "@/components/index/Remind";
+import CampusCard from "@/components/index/CampusCard";
+import Library from "@/components/index/Library";
+
+import { api } from "@/utils/api.js";
+import { indexRequests } from "@/utils/indexRequests.js";
+
+/* eslint-disable */
+if (!Function.prototype.after) {
+  Function.prototype.after = function(fn) {
+    const self = this;
+    return async function(...args) {
+      const ret = await self.apply(this, args);
+      if (ret)
+        return ret.success ? fn.apply(this, args) : console.error(ret.err);
+    };
+  };
+}
+/* eslint-enable */
+
+export default class Index extends wepy.page {
+  config = {
+    navigationBarTitleText: "NJUPT",
+    navigationBarBackgroundColor: "#00ca8f",
+    navigationBarTextStyle: "white"
+  };
+
+  data = {
+    token: "",
+    userInfo: null,
+    todoCounts: 0,
+    date: "",
+    day: "",
+    week: 0,
+    courses: [],
+    balance: 0,
+    yktRecord: {},
+    borrowingBooks: 0,
+    borrowedBooks: 0,
+    seats: 0,
+    campusCardServiceable: true
+  };
+
+  components = {
+    "status-bar": StatusBar,
+    remind: Remind,
+    "campus-card": CampusCard,
+    library: Library
+  };
+
+  getDate() {
+    this.date = moment().format(`YYYY.MM.DD`);
+    this.day = moment().format(`ddd`);
+    return { success: true };
+  }
+
+  checkLogined() {
+    if (
+      wepy.getStorageSync(`token`) === "" ||
+      wepy.getStorageSync("shouldBind")
+    ) {
+      // 没注册用户也需要在这里 set shouldBind
+      wepy.setStorageSync("shouldBind", true);
+      wepy.reLaunch({ url: "login" });
+      return { success: false, err: "未登录" };
+    }
+    return { success: true };
+  }
+
+  async getModuleStatus() {
+    const {
+      data: { data: moduleStatus, success, ...err }
+    } = await api.module();
+
+    const pageStatus = this.mapModuleStatusToPath(moduleStatus);
+
+    wepy.setStorageSync(`module`, JSON.stringify(moduleStatus));
+    wepy.setStorageSync(`pageStatus`, JSON.stringify(pageStatus));
+
+    return { success, err };
+  }
+
+  mapModuleStatusToPath(modules) {
+    // 需要模块管理控制的页面
+    const pairs = {
+      一卡通: `campusCard`,
+      图书馆: `library`,
+      校历: `calendar`,
+      消息盒子: `message`,
+      一卡通转账: `rechargeCard`,
+      一卡通网费: `rechargeInternetFee`,
+      一卡通电费: `rechargeElecFee`,
+      智慧校园: `score`,
+      正方: `course`
+    };
+
+    const pageStatus = {};
+
+    modules
+      .filter(({ moduleName }) => Object.keys(pairs).includes(moduleName))
+      .forEach(
+        ({ moduleName, open }) => (pageStatus[pairs[moduleName]] = open)
+      );
+    this.campusCardServiceable = pageStatus.campusCard;
+
+    return pageStatus;
+  }
+
+  async getCommonInfo() {
+    const {
+      data: { data: common, success, ...err }
+    } = await api.common();
+    this.week = common.week;
+    this.$apply();
+
+    wepy.setStorageSync(`common`, JSON.stringify(common));
+
+    return { success, err };
+  }
+
+  getIndexInfo() {
+    Object.values(indexRequests).forEach(fn => fn.apply(this));
+    return { success: true };
+  }
+
+  init() {
+    /**
+     * 初始化逻辑
+     * 检测是否有 token
+     * ⬇️
+     * 有     没有
+     * ⬇️      ⬇️
+     * 继续    跳转 login
+     */
+
+    this.checkLogined
+      .after(this.getDate)
+      .after(this.getModuleStatus)
+      .after(this.getCommonInfo)
+      .after(this.getIndexInfo)
+      .call(this);
+  }
+
+  onLoad() {
+    this.init();
+  }
+
+  onShow() {
+    if (this.checkLogined.success) {
+      indexRequests.yktBalance.apply(this);
+    }
+  }
+}
+</script>
+
+<style lang="stylus" scoped>
+@import '../assets/stylus/main'
+
+.index
+  padding-bottom 40rpx
+  color main-color
+</style>

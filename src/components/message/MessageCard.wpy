@@ -1,0 +1,142 @@
+<template lang="pug">
+view.card(class="{{message.animate}}")
+  view.header(style="background-image:url('{{message.bgUrl}}')")
+    view.wrapper
+      view.title-wrapper
+        text.title {{message.title}}
+      view.info-wrapper
+        view.round(class="{{message.isReaded ? 'readed' : 'unreaded'}}")
+        text.desc(class="{{message.isReaded ? 'readed' : 'unreaded'}}") {{message.isReaded ? '已读' : '未读'}}
+        text.time {{message.time}}
+    view.line
+
+  view.footer(class="{{message.isFolded ? 'folded' : 'unfolded'}}" @tap="handlePullDown")
+    view.content-wrapper(class="{{message.isFolded ? 'folded' : 'unfolded'}}")
+      view.content
+        text.text {{message.content}}
+      view.deleteBtn( @tap.stop="handleDelete") 删除
+    image.arrow(src="{{message.isFolded ? 'https://static.airbob.org/image/page/message/down.png' : 'https://static.airbob.org/image/page/message/up.png'}}")
+</template>
+
+<script>
+import wepy from "wepy";
+import Line from "../Line";
+
+export default class MessageCard extends wepy.component {
+  props = {
+    message: {
+      type: Object,
+      twoWay: true
+    }
+  };
+
+  components = {
+    line: Line
+  };
+
+  methods = {
+    handleDelete() {
+      this.message.isFolded = true;
+      this.$emit("delete", this.message.id);
+    },
+    handlePullDown() {
+      this.message.isFolded = !this.message.isFolded;
+      this.$emit("read", this.message.id);
+    }
+  };
+}
+</script>
+
+<style lang="stylus" scoped>
+@import '../../assets/stylus/main'
+@import '../../assets/stylus/_animate'
+
+unreaded-color = #ff5a00
+readed-color = #02db02
+
+.card
+  {card}
+  margin-bottom 34rpx
+  border none
+  box-shadow 0 4rpx 20rpx 0 rgba(11, 3, 5, 0.1)
+  .line
+    margin 0 24rpx
+    width 100%
+    height 2rpx
+    transform scaleY(0.3)
+    background #dcdcdc
+  .header
+    position relative
+    background-size 100% 102%
+    overflow hidden
+    .wrapper
+      display flex
+      margin 0 24rpx
+      height 220rpx
+      flex-direction column-reverse
+      align-items flex-start
+      .title
+        display block
+        margin-bottom 22rpx
+        font-size list-font-size
+        font-weight 700
+      .info-wrapper
+        display flex
+        font-size desc-font-size
+        justify-content flex-start
+        align-items center
+        .unreaded
+          &.desc
+            color unreaded-color
+          &.round
+            background unreaded-color
+        .readed
+          &.desc
+            color readed-color
+          &.round
+            background readed-color
+        .round
+          width 16rpx
+          height 16rpx
+          border-radius 50%
+        .desc
+          margin-left 8rpx
+        .time
+          margin-left 14rpx
+          color sub-color
+  .footer
+    display flex
+    padding 26rpx
+    min-height 104rpx
+    box-sizing border-box
+    justify-content space-between
+    transition min-height 0.5s ease-out
+    &.unfolded
+      min-height 150rpx
+    .content-wrapper
+      width 570rpx
+      &.unfolded
+        .content
+          max-height 9999rpx
+          white-space normal
+        .deleteBtn
+          display inline-block
+      .content
+        max-height 28rpx
+        font-size desc-font-size
+        color sub-color
+        white-space nowrap
+        overflow hidden
+        text-overflow ellipsis
+      .deleteBtn
+        display none
+        margin-top 26rpx
+        padding 10rpx 14rpx
+        font-size desc-font-size
+        color #fe0000
+        border 1rpx solid #fe0000
+    .arrow
+      width 30rpx
+      height 26rpx
+      align-self center
+</style>

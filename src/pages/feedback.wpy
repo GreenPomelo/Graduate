@@ -1,0 +1,251 @@
+<template lang="pug">
+view.feedback
+  view.header(wx:if="{{isReply}}")
+    image.logo(src="https://static.airbob.org/image/page/profile/icon-phone.png")
+    text.text 客服已经回复
+
+  view.content-wrapper
+    view.content-list
+      repeat(for="{{messages}}" key="key" index="index" item="message")
+        view.content(class="{{message.owner ===  0? 'me' : 'him'}} {{message.isNew ? 'fadeInUpReverse' : 'fadeIn'}}")
+          view.info(wx:if="{{index === 0}}") 编号：{{code}} 类型：{{type}}
+          view.text
+            text {{message.content}}
+    view.end-line(wx:if="{{isResolved}}")
+      view.line
+      view.text 工单编号{{code}}处理完成
+      view.line
+
+  view.input-wrapper
+    input.input(value="{{input}}" @blur="handleInputBlur" @input="handleInput")
+    view.send-btn( @tap="handleTapOnSendBtn") ＋
+</template>
+
+<script>
+import wepy from "wepy";
+
+export default class Feedback extends wepy.page {
+  config = {
+    navigationBarTitleText: "NJUPT",
+    navigationBarBackgroundColor: "#00ca8f",
+    navigationBarTextStyle: "white"
+  };
+
+  data = {
+    isResolved: false,
+    isReply: false,
+    code: "",
+    type: ``,
+    input: ``,
+    messages: []
+  };
+
+  methods = {
+    handleInputBlur(event) {
+      const { value } = event.detail;
+      this.input = value;
+    },
+    async handleTapOnSendBtn() {
+      if (this.isResolved) {
+        return await wepy.showModal({
+          title: "操作失败",
+          content: "本反馈已经结束了哟～",
+          showCancel: false
+        });
+      }
+      if (this.code === "") {
+        return await wepy.showModal({
+          title: "反馈失败",
+          content: "似乎出了点问题呢～",
+          showCancel: false
+        });
+      }
+      if (this.input !== ``) {
+        wepy.showLoading({
+          title: "正在反馈"
+        });
+        let that = this;
+        wepy
+          .request({
+            url:
+              this.$parent.globalData.requestUrl +
+              "feedback/" +
+              this.code +
+              "/detail/message",
+            method: "POST",
+            data: { message: that.input }
+          })
+          .then(res => {
+            if (res.data.success) {
+              wepy.hideLoading();
+              that.messages.push({
+                owner: 0,
+                content: that.input,
+                isNew: true
+              });
+              that.input = ``;
+              setTimeout(() => {
+                wepy.pageScrollTo({
+                  scrollTop: 9999
+                });
+              }, 17);
+              that.$apply();
+            } else {
+              wepy.hideLoading();
+              wepy.showModal({
+                title: "反馈失败",
+                content: "似乎出了点问题呢～",
+                showCancel: false
+              });
+            }
+          });
+      }
+    },
+    handleInput(event) {}
+  };
+  init(e) {
+    if (e.tag) {
+      wepy.showLoading({
+        title: "加载中"
+      });
+      wepy
+        .request({
+          url: this.$parent.globalData.requestUrl + "feedback",
+          method: "POST",
+          data: {
+            tag: e.tag
+          }
+        })
+        .then(res => {
+          if (res.data.success) {
+            this.code = res.data.data.id;
+            this.type = e.tag;
+            wepy.hideLoading();
+          } else {
+            wepy.hideLoading();
+            wepy.showModal({
+              title: "新建反馈失败",
+              content: "似乎出了点问题呢～",
+              showCancel: false
+            });
+          }
+        });
+    } else if (e.id) {
+      if (e.status === 2 || e.status === "2") {
+        this.isResolved = true;
+      }
+      wepy.showLoading({
+        title: "加载中"
+      });
+      wepy
+        .request({
+          url:
+            this.$parent.globalData.requestUrl + "feedback/" + e.id + "/detail"
+        })
+        .then(res => {
+          if (res.data.success) {
+            this.code = e.id;
+            this.type = e.type;
+            wepy.hideLoading();
+            res.data.data.forEach(element => {
+              if (element.createUser === 1) {
+                this.isReply = true;
+              }
+              this.messages.push({
+                owner: element.createUser,
+                content: element.message,
+                isNew: false
+              });
+            });
+            this.$apply();
+          }
+        });
+    }
+  }
+  onLoad(e) {
+    this.init(e);
+  }
+}
+</script>
+
+<style lang="stylus" scoped>
+@import '../assets/stylus/main'
+@import '../assets/stylus/_animate'
+
+.feedback
+  position relative
+  color main-color
+  .header
+    display flex
+    height 114rpx
+    align-items center
+    box-shadow 0 -5rpx 20rpx 0 rgba(11, 3, 5, 0.1)
+    background-color #effffa
+    .logo
+      margin-left 40rpx
+      width 48rpx
+      height 48rpx
+    .text
+      margin-left 16rpx
+      font-size subtitle-font-size
+  .content-wrapper
+    margin 36rpx 36rpx 0 36rpx
+    padding-bottom 120rpx
+    .content-list
+      display flex
+      flex-direction column
+    .content
+      margin-bottom 40rpx
+      padding 26rpx
+      width 520rpx
+      font-size sub-font-size
+      border-radius 20rpx
+      &.me
+        border-bottom-right-radius 0
+        align-self flex-end
+        background #f5f5f5
+      &.him
+        border-bottom-left-radius 0
+        align-self flex-start
+        background #b8ffcf
+      .info
+        margin-bottom 14rpx
+        color #00af7c
+    .end-line
+      display flex
+      align-items center
+      .text
+        margin 0 20rpx
+        font-size sub-font-size
+        color #00af7c
+        text-align center
+      .line
+        flex 1
+        height 2rpx
+        background #00af7c
+  .input-wrapper
+    display flex
+    position fixed
+    bottom 0
+    width 100%
+    height 96rpx
+    background #f2f2f2
+    justify-content space-around
+    align-items center
+    .input
+      width 600rpx
+      height 56rpx
+      font-size sub-font-size
+      border-radius 8rpx
+      background #fff
+    .send-btn
+      width 56rpx
+      height 56rpx
+      line-height 56rpx
+      font-size 46rpx
+      font-weight 700
+      color #a7a7a7
+      text-align center
+      border 2rpx solid #a7a7a7
+      border-radius 50%
+</style>

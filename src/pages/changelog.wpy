@@ -1,0 +1,122 @@
+<template lang="pug">
+view.changelog
+  view.header
+    view.logo-wrapper
+      image.logo(src="https://static.airbob.org/image/page/profile/njuptlogo.png" mode="widthFix")
+    view.text-wrapper
+      text.name 南邮小程序 · 研究生
+      text.developers 青柚工作室开发
+
+  view.changelog-list
+    repeat(for="{{changelogs}}" key="key" index="index" item="changelog")
+      view.changelog-wrapper
+        view.version-info
+          text.version {{changelog.version}} 版本
+          text.time {{changelog.time}} 更新
+        view.line
+        view.content-wrapper
+          text.content {{changelog.content}}
+</template>
+
+<script>
+import wepy from "wepy";
+
+export default class Changelog extends wepy.page {
+  config = {
+    navigationBarTitleText: "更新日志",
+    navigationBarBackgroundColor: "#5c9ef7",
+    navigationBarTextStyle: "white"
+  };
+
+  data = {
+    changelogs: [
+      {
+        version: `1.0.1`,
+        content: `· 修复线上的若干bug,研究生小程序正式推广
+
+· 饲养员变身产品经理!`,
+        time: `2018.11.17`
+      },
+      {
+        version: `1.0.0`,
+        content: `· 南邮研究生版小程序正式上线！研究生不用羡慕本科生了！
+
+· 一卡通功能完整上线：一卡通余额、饭卡充值、空调网费充值全都能用！
+
+· 图书馆系统上线：借阅情况、一键续借、图书检索，小程序全部完成！
+
+· 日常学习功能：课表查询、研究生成绩查看，在这里全都够了！
+
+· 消息盒子贴心提醒：及时收到青柚充满爱爱的消息。
+
+· 我们会继续加油修复BUG
+
+· 产品说会认真调研研究生需求，让它变得更好用！（程序员哭）
+
+· 提前预祝顾老师研究生入学快乐！`,
+        time: `2018.6.15`
+      }
+    ]
+  };
+}
+</script>
+
+<style lang="stylus" scoped>
+@import '../assets/stylus/main'
+.changelog
+  padding-bottom 40rpx
+  color main-color
+  .line
+    {line}
+    margin-left 10%
+  .header
+    display flex
+    position relative
+    height 296rpx
+    justify-content center
+    align-items center
+    background #5c9ef7
+    .logo-wrapper
+      display flex
+      position absolute
+      top 0
+      left 0
+      width 100%
+      height 100%
+      justify-content center
+      align-items center
+      .logo
+        width 27.5%
+        opacity 0.3
+    .text-wrapper
+      color #fff
+      text-align center
+      .name
+        display block
+        font-size title-font-size
+        font-weight 700
+      .developers
+        display block
+        margin-top 10rpx
+        font-size sub-font-size
+  .changelog-list
+    margin 0 42rpx
+    .changelog-wrapper
+      margin-top 56rpx
+      .version-info
+        display flex
+        height 54rpx
+        justify-content space-between
+        align-items flex-start
+        .version
+          font-size list-font-size
+          color #5c9ef7
+        .time
+          font-size desc-font-size
+          color sub-color
+          align-self center
+      .content-wrapper
+        margin-top 24rpx
+        font-size sub-font-size
+        line-height 1.5
+</style>

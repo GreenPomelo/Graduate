@@ -1,0 +1,110 @@
+<template lang="pug">
+card.course-list( :cardId="courseCount")
+  view.title
+    slot(name="title")
+  view.content(class="{{show}}")
+    slot(name="content")
+  view.footer(class="{{show}}")
+    view.tag(class="{{tagShow}}" @tap="navigateTo('course')")
+      text.text 查看课表
+    view.count(class="{{countShow}}")
+      text.num {{courseCount}}
+      text.desc 门
+  slot
+</template>
+
+<script>
+import wepy from "wepy";
+import BaseCourseCard from "@/components/card/BaseCourseCard";
+import navigateMixin from "@/mixins/navigate";
+
+export default class CourseListCard extends wepy.component {
+  props = {
+    courseCount: {
+      type: Number,
+      default: 0
+    }
+  };
+
+  data = {
+    id: 0
+  };
+
+  components = {
+    card: BaseCourseCard
+  };
+
+  mixins = [navigateMixin];
+
+  computed = {
+    countShow() {
+      return this.courseCount !== 0 ? "show" : "";
+    },
+    tagShow() {
+      return this.courseCount === 0 ? "show" : "";
+    },
+    show() {
+      return this.courseCount !== 0 ? "count" : "tag";
+    }
+  };
+}
+</script>
+
+<style lang="stylus" scoped>
+@import '../../assets/stylus/main'
+
+.course-list
+  {card-bg-color-1}
+  display inline-block
+
+.title
+  padding-top 38rpx
+  padding-left 36rpx
+  font-size title-font-size
+  font-weight 700
+  color course-list-title-color
+
+.content
+  width 300rpx
+  &.tag
+    margin-top 26rpx
+    padding-left 36rpx
+    line-height 44rpx
+    font-size sub-font-size
+    font-weight 300
+    color sub-color
+  &.count
+    font-size desc-font-size
+    color sub-color
+    padding-left 36rpx
+    letter-spacing 2rpx
+
+.footer
+  display flex
+  &.tag
+    margin 30rpx 0 -16rpx 0
+    tag(card-1-color)
+    .count
+      display none
+    .text 
+      margin-left 36rpx
+  &.count
+    position absolute
+    display flex
+    bottom 50rpx
+    margin-top -30rpx
+    padding-left 36rpx
+    width calc(100% - 72rpx)
+    justify-content flex-end
+    .tag
+      display none
+  .num
+    margin-right 8rpx
+    font-size number-font-size
+    font-weight 700
+    font-weight bold
+    color card-1-color
+  .desc
+    font-size sub-font-size
+    color sub-color
+</style>

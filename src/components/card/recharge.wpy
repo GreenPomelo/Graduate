@@ -1,0 +1,65 @@
+<template lang="pug">
+view.container( @tap="navigateTo({{recharge.link}})")
+  view.maininfo
+    view.title {{recharge.title}}
+    view.desc {{recharge.desc}}
+  view.bg
+    image.bg-image(src="{{recharge.imageSrc}}" mode="aspectFit" style="height:{{recharge.imageHeight}}")
+</template>
+
+<script>
+import wepy from "wepy";
+import navigateMixin from "@/mixins/navigate";
+
+export default class Recharge extends wepy.component {
+  props = {
+    recharge: {
+      type: Object
+    }
+  };
+
+  mixins = [navigateMixin];
+}
+</script>
+
+<style lang="stylus" scoped>
+@import '../../assets/stylus/main'
+
+.container
+  position relative
+  width 660rpx
+  margin 0 auto
+  height 148rpx
+  border-radius 20rpx
+  box-shadow 0 4rpx 20rpx 0 rgba(11, 3, 5, 0.1)
+  margin-top 24rpx
+  overflow hidden
+  .maininfo
+    margin-left 37rpx
+    padding-top 37rpx
+    line-height 36rpx
+    font-size 36rpx
+    .title
+      font-weight 700
+    .desc
+      padding-top 15rpx
+      color rgb(178, 178, 178)
+      font-size 28rpx
+      line-height 36rpx
+      height 36rpx
+      margin-left -2rpx
+  .bg
+    position absolute
+    width 300rpx
+    height 208rpx
+    bottom 0
+    right 0
+    overflow hidden
+  .bg-image
+    position relative
+    width 300rpx
+    height 100%
+    bottom -60rpx
+    right -80rpx
+    overflow hidden
+</style>

@@ -1,0 +1,57 @@
+<template lang="pug">
+view.question
+  view.header
+    view.title {{title}}
+    view.time {{time}}
+  view.content-wrapper
+    text.content {{displayContent}}
+</template>
+
+<script>
+import wepy from "wepy";
+
+export default class Question extends wepy.page {
+  config = {
+    navigationBarTitleText: "反馈和帮助",
+    navigationBarBackgroundColor: "#19cf9a",
+    navigationBarTextStyle: "white"
+  };
+
+  data = {
+    title: `为什么我的一卡通功能无法使用？`,
+    time: `2018-1-20`,
+    content: [
+      `反馈区的反馈需要人工回复，我们的所有运营成员均为南邮在校生且义务为大家服务，因此，同学们的反馈内容可能无法得到及时的回复，但会尽快处理告知情况。如果有紧急情况，请联系青柚官Q：2092313702`
+    ],
+    displayContent: ``
+  };
+
+  onLoad(option) {
+    this.displayContent = this.content[option.id];
+  }
+}
+</script>
+
+<style lang="stylus" scoped>
+@import '../assets/stylus/main'
+.question
+  padding-bottom 40rpx
+  color main-color
+  .header
+    padding 36rpx
+    background #19cf9a
+    .title
+      margin-top 42rpx
+      font-size title-font-size
+      font-weight 700
+      color #fff
+    .time
+      margin-top 26rpx
+      font-size desc-font-size
+      color #dcdcdc
+  .content-wrapper
+    padding 40rpx
+    .content
+      font-size sub-font-size
+      line-height 1.5
+</style>

@@ -1,0 +1,356 @@
+<template lang="pug">
+view.recharge
+  view.header
+    view.wrapper
+      image.image(src="https://static.airbob.org/image/page/campusCard/card-3.png" mode="widthFix")
+      view.title 校园卡转账
+      view.balance 充值宿舍电费
+
+  view.container
+    view.recharge-method
+      view.title 充值选择
+      view.method
+        text.label 支付方式
+        text.text 银行卡转账
+      line(marginLeft="10%")
+      view.type
+        text.label 充值类型
+        picker( @change="handleTypePicker" value="{{index}}" range="{{rechargeTypes}}")
+          text.text {{rechargeTypes[typeIndex]}} >
+      line(marginLeft="10%")
+      view.dorm( @tap.stop="openDormPicker")
+        text.label 宿舍选择
+        text.text 点击选择 >
+      line(marginLeft="10%")
+    recharge-amount( :amount="amount", :isDormPickerActive.sync="isDormPickerActive")
+    view.recharge-btn( @tap="handleClickOnRechargeBtn") 确认充值
+  pay-flow( :electricURL.sync="electricURL" :open.sync="isPayModalOpen" :charge.sync="charge" type="electric" payWay="校园卡转账" operateContent="校园卡转账" )
+
+  view.dorm-picker(class="{{isDormPickerActive ? 'active' : ''}}" @tap="closeDormPicker")
+    view.wrapper
+      view.top-bar
+        text.text 取消
+        text.text 确定
+      view.pickers( @tap.stop="stopPropagation")
+        view.picker
+          text.label 校区
+          picker( @change="handleCampusPicker" value="{{index}}" range="{{campus}}")
+            text.text {{campus[campusIndex]}} >
+        view.picker
+          text.label 苑区
+          picker( @change="handleAreaPicker" value="{{index}}" range="{{areas}}")
+            text.text {{areas[areaIndex]}} >
+        view.picker
+          text.label 楼栋
+          picker( @change="handleBuildingPicker" value="{{index}}" range="{{buildings}}")
+            text.text {{buildings[buildingIndex]}}栋 >
+        view.input-wrapper
+          text.label 大寝号
+          input.input( @input="handleDormNumberInput" placeholder="请输入大寝号" placeholder-style="{{placeholderStyles}}")
+        view.input-wrapper
+          text.label 小寝号
+          input.input( @input="smallDormNumberInput" disabled="{{campusIndex === 1 || campusIndex === '1'}}" placeholder="请输入小寝号" placeholder-style="{{placeholderStyles}}")
+</template>
+
+<script>
+import wepy from "wepy";
+import RechargeAmount from "../components/recharge/RechargeAmount";
+import Line from "../components/Line";
+import payFlow from "../components/recharge/pay-flow";
+import { request } from "@/utils/utils.js";
+
+export default class Recharge extends wepy.page {
+  config = {
+    navigationBarTitleText: "宿舍电费充值",
+    navigationBarBackgroundColor: "#ffd323",
+    navigationBarTextStyle: "white"
+  };
+
+  data = {
+    placeholderStyles: `
+      font-size: 28rpx;
+      line-height: 78rpx;
+      text-align: right;
+    `,
+    balance: 188.88,
+    amount: 0,
+    isDormPickerActive: false,
+    amountBtns: [
+      { amount: 20, isActive: true },
+      { amount: 50, isActive: false },
+      { amount: 100, isActive: false },
+      { amount: 200, isActive: false }
+    ],
+
+    rechargeTypes: [`小寝空调充值`, `大寝电费充值`],
+    campus: [`仙林`, `三牌楼`],
+    areas: [`苑区`, `青教`],
+    buildings: [],
+
+    dormNumber: 0,
+    smallDormNumber: 0,
+    typeIndex: 0,
+    campusIndex: 0,
+    areaIndex: 0,
+    buildingIndex: 0,
+    isPayModalOpen: false,
+    charge: "",
+    electricURL: ""
+  };
+
+  components = {
+    "recharge-amount": RechargeAmount,
+    line: Line,
+    "pay-flow": payFlow
+  };
+
+  methods = {
+    stopPropagation() {},
+    openDormPicker() {
+      this.isDormPickerActive = true;
+    },
+    closeDormPicker() {
+      this.isDormPickerActive = false;
+    },
+
+    handleAmountInput(event) {
+      const { value } = event.detail;
+      this.amount = Number(value) || 0;
+      const activeBtn = this.amountBtns.find(x => x.isActive === true);
+      if (activeBtn !== undefined) activeBtn.isActive = false;
+    },
+    handleDormNumberInput(event) {
+      const { value } = event.detail;
+      this.dormNumber = value;
+    },
+    smallDormNumberInput(event) {
+      const { value } = event.detail;
+      this.smallDormNumber = value;
+    },
+
+    handleTypePicker(event) {
+      const { value } = event.detail;
+      this.typeIndex = value;
+    },
+    handleCampusPicker(event) {
+      const { value } = event.detail;
+      this.campusIndex = value;
+    },
+    handleAreaPicker(event) {
+      const { value } = event.detail;
+      this.areaIndex = value;
+    },
+    handleBuildingPicker(event) {
+      const { value } = event.detail;
+      this.buildingIndex = value;
+    },
+
+    handleClickAmountBtn(amount) {
+      this.amount = amount;
+      this.amountBtns.map(x => (x.isActive = x.amount === amount));
+    },
+    async handleClickOnRechargeBtn() {
+      if (this.amount === 0) {
+        return wepy.showModal({
+          content: "请填写充值金额",
+          confirmText: "知道了",
+          showCancel: false,
+          confirmColor: "#353535"
+        });
+      } else {
+        this.putCharge(this.amount);
+        await this.openPayModal();
+        // this.isPayModalOpen = true;
+      }
+    }
+  };
+  async openPayModal() {
+    wepy.showLoading({
+      title: "正在验证房间号"
+    });
+    let roomId;
+    if (this.areaIndex === 1 || this.areaIndex === "1") {
+      this.buildingIndex = parseInt(Number(this.buildingIndex) + 49);
+    }
+    // 检查房间是否存在
+    if (this.typeIndex === "1" || this.typeIndex === 1) {
+      // big大寝
+      // 402大寝的话
+      // 三牌楼大寝0402
+      // 仙林4020
+      if (this.campusIndex !== "1" && this.campusIndex !== 1) {
+        // 仙林
+        roomId = this.dormNumber + "0";
+      }
+    } else {
+      // small小寝室
+      roomId = this.dormNumber + this.smallDormNumber;
+    }
+    if (this.campusIndex === "1" || this.campusIndex === 1) {
+      // 三牌楼
+      roomId = "0" + this.dormNumber;
+    }
+    let buildingId = `000${Number(this.buildingIndex) + 1}`.slice(-4);
+    const res = await request({
+      url: `${this.$parent.globalData.requestUrl}crawl/ykt/queryroom?campus=${
+        this.campusIndex
+      }&roomId=${roomId}&buildingId=${buildingId}`,
+      method: "POST"
+    });
+    const reshh = JSON.parse(res.data.data);
+    if (reshh.query_elec_roominfo.retcode === "0") {
+      this.electricURL = `campus=${
+        this.campusIndex
+      }&roomId=${roomId}&buildingId=${buildingId}`; // 用来在PayFlow中拼接 金额和密码
+      this.isPayModalOpen = true;
+      wepy.hideLoading();
+      this.$apply();
+    } else {
+      wepy.hideLoading();
+      // this.electricURL = `campus=${
+      //   this.campusIndex
+      // }&roomId=${roomId}&buildingId=${buildingId}`; // 用来在PayFlow中拼接 金额和密码
+      // wepy.hideLoading();
+      this.isPayModalOpen = false;
+      this.$apply();
+      await wepy.showModal({
+        content: "房间号有误",
+        confirmText: "知道了",
+        showCancel: false,
+        confirmColor: "#353535"
+      });
+    }
+  }
+  putCharge(number) {
+    this.charge = number;
+  }
+  async onLoad() {
+    for (let i = 1; i <= 49; i++) {
+      this.buildings.push(i);
+    }
+    this.$apply();
+  }
+}
+</script>
+
+<style lang="stylus" scoped>
+@import '../assets/stylus/main'
+
+border-color = #dcdcdc
+
+.recharge
+  position relative
+  padding-bottom 40rpx
+  color #1b1b1b
+  .line
+    {line}
+  .header
+    position relative
+    height 134rpx
+    background #ffd323
+    .wrapper
+      position absolute
+      bottom -74rpx
+      left 35rpx
+      padding-left 44rpx
+      width 680rpx
+      height 148rpx
+      border-radius 20rpx
+      box-sizing border-box
+      overflow hidden
+      box-shadow 0 -4rpx 20rpx 0 rgba(11, 3, 5, 0.1)
+      background-color #fff
+      .image
+        position absolute
+        right -120rpx
+        top 10rpx
+        width 350rpx
+      .title
+        margin-top 36rpx
+        line-height 36rpx
+        font-size 36rpx
+        font-weight 700
+      .balance
+        margin-top 16rpx
+        font-size 28rpx
+        line-height 28rpx
+        color #bdbdbd
+        .number
+          color #ff5a00
+  .container
+    margin 122rpx 48rpx 48rpx 48rpx
+    .recharge-method
+      .title
+        font-size title-font-size
+        line-height title-font-size
+        font-weight 700
+    .recharge-method
+      .method,
+      .type,
+      .dorm
+        display flex
+        height 72rpx
+        font-size sub-font-size
+        justify-content space-between
+        align-items center
+      .method
+        margin-top 18rpx
+      .label
+        color sub-color
+    .recharge-btn
+      margin 48rpx 0 0 6rpx
+      width 642rpx
+      height 72rpx
+      font-size sub-font-size
+      line-height 72rpx
+      text-align center
+      border-radius 20rpx
+      box-sizing border-box
+      background #ffd323
+  .dorm-picker
+    position absolute
+    top 0
+    z-index -1
+    width 100%
+    height 100vh
+    box-sizing border-box
+    background rgba(0, 0, 0, 0.15)
+    opacity 0
+    transition opacity 0.3s ease-out
+    &.active
+      z-index 1
+      opacity 1
+      .wrapper
+        transform translate3d(0, 0, 0)
+    .wrapper
+      position absolute
+      bottom 0
+      width 100%
+      height 506rpx
+      transform translate3d(0, 100%, 0)
+      background #fff
+      transition transform 0.3s ease-out
+      .top-bar
+        display flex
+        padding 0 28rpx
+        height 88rpx
+        justify-content space-between
+        align-items center
+        border-bottom 1rpx solid border-color
+        .text
+          font-size sub-font-size
+      .pickers
+        margin 0 58rpx
+        .picker,
+        .input-wrapper
+          display flex
+          height 72rpx
+          font-size sub-font-size
+          border-bottom 1rpx solid border-color
+          justify-content space-between
+          align-items center
+        .label
+          color sub-color
+        .input
+          text-align right
+</style>

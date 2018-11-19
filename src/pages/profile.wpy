@@ -1,0 +1,127 @@
+<template lang="pug">
+view.profile
+  view.header
+    view.banner
+      image.logo(src="https://static.airbob.org/image/page/profile/njuptlogo.png" mode="widthFix")
+    view.avatar-wrapper
+      view.avatar
+        open-data(type="userAvatarUrl")
+  view.info-wrapper
+    text.username {{username}}
+    text.bind-status {{isBinded ? "已绑定" : "未绑定"}}
+  view.card-list
+    repeat(for="{{cards}}" key="key" index="index" item="item")
+      card( :card="item")
+  view.remove-binding
+    text.link( @tap="handleRemoveBinding") 解除绑定
+</template>
+
+<script>
+import wepy from "wepy";
+import Card from "./../components/profile/ProfileCard";
+import { api } from "../utils/api.js";
+
+export default class Profile extends wepy.page {
+  config = {
+    navigationBarTitleText: "NJUPT",
+    navigationBarBackgroundColor: "#19cf9a",
+    navigationBarTextStyle: "white"
+  };
+
+  data = {
+    isBinded: true,
+    cards: [
+      {
+        title: `帮助与反馈`,
+        desc: `提交工单获取客服帮助`,
+        imgLink: `https://static.airbob.org/image/page/profile/help.png`,
+        navigateTo: `helpCenter`
+      },
+      {
+        title: `加入青柚`,
+        desc: `报名加入青柚工作室`,
+        imgLink: `https://static.airbob.org/image/page/profile/join.png`,
+        navigateTo: `close`
+      },
+      {
+        title: `更新日志`,
+        desc: `查看研究生小程序新特性`,
+        imgLink: `https://static.airbob.org/image/page/profile/new.png`,
+        navigateTo: `changelog`
+      },
+      {
+        title: `关于我们`,
+        desc: `了解青柚和研究生小程序`,
+        imgLink: `https://static.airbob.org/image/page/profile/about.png`,
+        navigateTo: `aboutus`
+      }
+    ]
+  };
+
+  methods = {
+    handleRemoveBinding() {
+      api.logout();
+      wepy.clearStorageSync();
+      wepy.setStorageSync("shouldBind", true);
+      wepy.reLaunch({ url: "login" });
+    }
+  };
+
+  components = {
+    card: Card
+  };
+}
+</script>
+
+<style lang="stylus" scoped>
+@import '../assets/stylus/main'
+
+.profile
+  padding-bottom 40rpx
+  color main-color
+  .header
+    position relative
+    .banner
+      display flex
+      height 206rpx
+      justify-content center
+      overflow hidden
+      background #19cf9a
+      .logo
+        width 40%
+        opacity 0.5
+    .avatar-wrapper
+      display flex
+      position absolute
+      bottom -70rpx
+      width 100%
+      height 150rpx
+      justify-content center
+      .avatar
+        width 20%
+        height 100%
+        border-radius 50%
+        overflow hidden
+  .info-wrapper
+    margin-top 96rpx
+    .username,
+    .bind-status
+      display block
+      text-align center
+    .username
+      font-size list-font-size
+    .bind-status
+      font-size sub-font-size
+      color sub-color
+  .card-list
+    margin 60rpx 60rpx 40rpx 60rpx
+  .remove-binding
+    padding 20rpx
+    display block
+    text-align center
+    .link
+      padding 20rpx
+      font-size sub-font-size
+      color #19cf9a
+      border-bottom 1rpx solid #19cf9a
+</style>

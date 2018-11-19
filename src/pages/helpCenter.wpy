@@ -1,0 +1,230 @@
+<template lang="pug">
+view.help-center
+
+  view.header
+    view.row-1
+      text.message-count {{messagesCount === 0 ? '暂无新回复' : '你有' + messagesCount + '条新回复'}}
+      view.avatar
+        open-data(type="userAvatarUrl")
+    view.row-2
+      text.service-record-title 服务记录
+      text.service-record-count 共{{serviceRecordsCount}}条 >
+    scroll-view(scroll-y=true style="height:100rpx;")
+      repeat(for="{{serviceRecords}}" key="key" index="index" item="item")
+        view.row-3( @tap.stop="navigateTo(feedback?id={{item.id}}&type={{item.type}}&status={{item.status}})")
+          text.record-info {{item.time}} {{item.content}}
+          text(class="{{item.isResolved ? 'record-resolve-status resolved' : 'record-info'}}") {{item.isResolved ? "已处理" : "待处理"}}
+    view.get-more 下拉加载更多
+    //- view.row-4(wx:if="{{serviceRecords[1]}}" @tap.stop="navigateTo(feedback?id={{serviceRecords[1].id}}&ype={{serviceRecords[1].type}}&status={{serviceRecords[1].status}})")
+    //-   text.record-info {{serviceRecords[1].time}} {{serviceRecords[1].content}}
+    //-   text.record-resolve-status(class="{{serviceRecords[1].isResolved ? 'resolved' : ''}}") {{serviceRecords[1].isResolved ? "已处理" : "待处理"}}
+
+  view.consult-wrapper
+    view.title 我要咨询
+    repeat(for="{{questions}}" key="key" index="index" item="question")
+    view.partition-wrapper
+      repeat(for="{{consultPartition}}" key="key" index="index" item="partition")
+        view.partition( @tap="navigateTo('feedback?tag={{partition.desc}}')")
+          view.icon-wrapper
+            image.icon(src="{{partition.image}}")
+          view.desc {{partition.desc}}
+
+  view.self-service-wrapper
+    view.title 自助服务
+    view.questions-wrapper
+      repeat(for="{{questions}}" key="key" index="index" item="question")
+        view.question( @tap="navigateTo({{question.link}})") {{question.content}}
+        view.line
+</template>
+
+<script>
+import wepy from "wepy";
+import { api } from "@/utils/api.js";
+
+export default class HelpCenter extends wepy.page {
+  config = {
+    navigationBarTitleText: "帮助与反馈",
+    navigationBarBackgroundColor: "#19cf9a",
+    navigationBarTextStyle: "white"
+  };
+
+  data = {
+    messagesCount: 0,
+    serviceRecordsCount: 0,
+    serviceRecords: [],
+    lastDetailModel: {},
+    lastDetailModelArr: [],
+    consultPartition: [
+      {
+        image: `https://static.airbob.org/image/page/profile/bug.png`,
+        desc: `bug提交`
+      },
+      {
+        image: `https://static.airbob.org/image/page/profile/suggest.png`,
+        desc: `建议反馈`
+      },
+      {
+        image: `https://static.airbob.org/image/page/profile/question.png`,
+        desc: `问题咨询`
+      },
+      {
+        image: `https://static.airbob.org/image/page/profile/other.png`,
+        desc: `其他`
+      }
+    ],
+    questions: [
+      {
+        content: `为什么我的反馈没有回复?`,
+        link: `question?id=0`
+      },
+      {
+        content: `南邮小程序体验反馈群：330843906`
+      },
+      {
+        content: `更优质快捷的客户服务-肖辰旭官方QQ:2092313702`
+      }
+      // },
+      // {
+      //   content: `如何取消绑定小程序？`,
+      //   link: `question?id=1`
+      // },
+      // {
+      //   content: `如何查看我的考试成绩？`,
+      //   link: `question?id=2`
+      // },
+      // {
+      //   content: `如何使用自助反馈问题功能？`,
+      //   link: `question?id=3`
+      // }
+    ]
+  };
+
+  methods = {
+    navigateTo(url) {
+      wepy.navigateTo({ url });
+    }
+  };
+  async init() {
+    const myFeedback = await api.feedback();
+    this.serviceRecordsCount = myFeedback.data.data.length;
+    myFeedback.data.data.forEach(element => {
+      let item = {
+        content: element.tag,
+        isResolved: element.status === 2,
+        time: element.gmtModified.split(" ")[0].substr(5),
+        id: element.id,
+        type: element.tag,
+        status: element.status
+      };
+      this.serviceRecords.push(item);
+      if (element.lastDetailModel && element.lastDetailModel.createUser === 1) {
+        this.lastDetailModel[element.id] = element.lastDetailModel.message;
+        this.lastDetailModelArr.push({
+          id: element.id,
+          lastDetailModel: element.lastDetailModel.message
+        });
+      }
+    });
+    this.$apply();
+  }
+  async onLoad() {
+    await this.init();
+    if (
+      !wepy.getStorageSync("getLastDetail") &&
+      this.lastDetailModelArr.length > 0
+    ) {
+      this.messagesCount = this.lastDetailModelArr.length;
+      wepy.setStorageSync("getLastDetail", this.lastDetailModelArr);
+    } else if (wepy.getStorageSync("getLastDetail")) {
+      wepy.getStorageSync("getLastDetail").forEach(element => {
+        if (this.lastDetailModel[element.id] !== element.lastDetailModel) {
+          this.messagesCount++;
+        }
+      });
+      wepy.setStorageSync("getLastDetail", this.lastDetailModelArr);
+    }
+  }
+}
+</script>
+
+<style lang="stylus" scoped>
+@import '../assets/stylus/main'
+unresolved-color = #19cf9a
+resolved-color = sub-color
+.get-more
+  text-align right
+  font-size like-font-size
+  color sub-color
+.help-center
+  padding-bottom 40rpx
+  color main-color
+  .line
+    {line}
+    margin-left 10%
+  .header
+    padding 32rpx 26rpx 26rpx 42rpx
+    box-shadow 0 -5rpx 20rpx 0 rgba(11, 3, 5, 0.1)
+    background #effffa
+    [class ^= 'row-']
+      display flex
+      justify-content space-between
+      align-items center
+    .row-1
+      .message-count
+        font-size list-font-size
+        font-weight 700
+      .avatar
+        width 66rpx
+        height 66rpx
+        border-radius 50%
+        overflow hidden
+    .row-2
+      margin-top 20rpx
+      .service-record-title
+        font-size sub-font-size
+        font-weight 500
+      .service-record-count
+        font-size desc-font-size
+    .row-3, .row-4
+      margin-top 10rpx
+      .record-info
+        max-width 520rpx
+        font-size like-font-size
+        color sub-color
+      .record-resolve-status
+        padding 4rpx 12rpx
+        font-size desc-font-size
+        color unresolved-color
+        border 1rpx solid unresolved-color
+        border-radius 24rpx
+        &.resolved
+          // color resolved-color
+          // border 1rpx solid resolved-color
+  .consult-wrapper
+    margin 50rpx 50rpx 0 50rpx
+    .title
+      font-size title-font-size
+      font-weight 700
+    .partition-wrapper
+      display flex
+      margin-top 40rpx
+      justify-content space-around
+      .icon
+        width 106rpx
+        height 100rpx
+      .desc
+        margin-top 16rpx
+        font-size button-small-font-size
+        color sub-color
+        text-align center
+  .self-service-wrapper
+    margin 50rpx
+    .title
+      font-size title-font-size
+      font-weight 700
+    .questions-wrapper
+      margin-top 20rpx
+      .question
+        font-size sub-font-size
+        line-height 94rpx
+</style>

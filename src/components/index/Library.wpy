@@ -1,0 +1,72 @@
+<template lang="pug">
+view.library
+  panel(title="图书馆")
+    view.wrapper( @tap="navigateTo('library')")
+      card.card
+        view.header
+          view.borrowing
+            view.desc 正在借阅
+            view.count
+              text.number {{borrowingBooks}}
+              text.unit 本
+          view.borrowed
+            view.desc 累积借阅
+            view.count
+              text.number {{borrowedBooks}}
+              text.unit 本
+        view.footer(slot="footer") 图书馆剩余座位{{seats}}个，快去自习吧。
+</template>
+
+<script>
+import wepy from "wepy";
+import Panel from "@/components/panel";
+import Card from "@/components/card/Card";
+import navigateMixin from "@/mixins/navigate";
+
+export default class Library extends wepy.component {
+  props = {
+    borrowingBooks: Number,
+    borrowedBooks: Number,
+    seats: Number
+  };
+
+  components = {
+    panel: Panel,
+    card: Card
+  };
+
+  mixins = [navigateMixin];
+}
+</script>
+
+<style lang="stylus" scoped>
+@import '../../assets/stylus/main'
+
+.library
+  margin-top 48rpx
+  .wrapper
+    display flex
+    justify-content center
+    .card
+      background url('https://static.airbob.org/image/page/index/lib_card.png')
+      background-size 100% 100%
+
+.header
+  display flex
+  margin-top 62rpx
+  .borrowing,
+  .borrowed
+    flex 1
+    text-align center
+    .count
+      .number
+        font-size number-font-size
+        font-weight 700
+        color #a900bd
+      .unit
+        margin-left 10rpx
+        {sub-font}
+
+.footer
+  font-size sub-font-size
+</style>

@@ -1,0 +1,116 @@
+<template lang="pug">
+view.remind
+  panel(title="课程提醒")
+    text(slot="more" @tap="navigateTo('course')") 查看完整 >
+    scroll-view(scroll-x class="courses" scroll-left="{{scrollLeft}}")
+      // view.wrapper
+      course-list( :courseCount.sync="courseConut")
+        text(slot="title") 今日课程
+        repeat(wx:if="{{courseNames.lenght > 0}}" for="{{courseNames}}" key="key" index="index" item="name" slot="content")
+          view.course-name
+            text {{name}}
+        view(slot="content" class="no-course") 君今日无课，加油喔~
+      repeat(for="{{courses}}" item="course" key="key" index="index" slot="content")
+        course-card1(wx:if="{{index === 0}}" :course.sync="course")
+        course-card2(wx:elif="{{index === 1}}" :course.sync="course")
+        course-card3(wx:elif="{{index === 2}}" :course.sync="course")
+        course-card4(wx:elif="{{index === 3}}" :course.sync="course")
+        course-card5(wx:elif="{{index === 4}}" :course.sync="course")
+        course-card5(wx:elif="{{index === 5}}" :course.sync="course")
+        course-card5(wx:elif="{{index === 6}}" :course.sync="course")
+</template>
+
+<script>
+import wepy from "wepy";
+import Panel from "@/components/panel";
+import CourseList from "@/components/index/CourseListCard";
+import CourseCard from "@/components/index/CourseCard";
+import navigateMixin from "@/mixins/navigate";
+import TimeMixin from "@/mixins/time";
+
+export default class extends wepy.component {
+  props = {
+    courses: {
+      type: Array,
+      twoWay: true
+    }
+  };
+
+  data = {
+    scrollLeft: 0,
+    courseNames: [],
+    courseConut: 0
+  };
+
+  components = {
+    panel: Panel,
+    "course-list": CourseList,
+    "course-card1": CourseCard,
+    "course-card2": CourseCard,
+    "course-card3": CourseCard,
+    "course-card4": CourseCard,
+    "course-card5": CourseCard
+  };
+
+  mixins = [navigateMixin, TimeMixin];
+
+  watch = {
+    courses() {
+      this.courses.map(this.mapCourses.bind(this));
+      this.courseNames = this.courses.reduce(
+        (acc, x) => acc.concat(x.name),
+        []
+      );
+      this.courseConut = this.courseNames.length;
+      if (this.courseConut === 0) {
+        this.courseNames[0] = `肖辰旭提醒你：\n记得复习昨天的课程和预习明天的课程哦～`;
+      }
+      this.courses = this.courses.sort((a, b) => a.status - b.status);
+      if (this.courses[0].status === 0 || this.courses[0].status === 1) {
+        this.scrollLeft = 155; // 玄学居中数值
+      }
+      this.$apply();
+    }
+  };
+
+  mapCourses(course) {
+    const { start, end } = this.sectionToTime(
+      course.sectionstart,
+      course.sectionend
+    );
+    /**
+     * status 课程状态
+     *  0 => 正在上课
+     *  1 => 课程即将（在一小时内）开始
+     *  2 => 课程还未开始
+     *  3 => 课程已结束
+     */
+    course.status = this.courseIsStarted(start, end);
+    course.start = this.timeToString(start);
+    course.end = this.timeToString(end);
+  }
+
+  onLoad() {
+    this.scrollLeft++; // 触发 scroll-view 刷新
+  }
+}
+</script>
+
+<style lang="stylus" scoped>
+@import '../../assets/stylus/main'
+
+.remind
+  margin-top 48rpx
+  .courses
+    // display flex
+    // width auto
+    // flex-wrap nowrap
+    position relative
+    top -36rpx
+    white-space nowrap
+    // .wrapper
+      // position relative
+    // margin-top -36rpx
+    .no-course
+      font-weight bold
+</style>

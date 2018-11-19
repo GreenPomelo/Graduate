@@ -1,0 +1,612 @@
+<template>
+  <view class="page">
+    <view class="modal-mask" bindtap="hideModal" wx:if="{{ showModal }}"></view>
+    <view class="modal-mask" bindtap="hideWindow" wx:if="{{ showWindow }}" style="z-index: 100"></view>
+    <image src="https://static.airbob.org/image/page/library/cut.png" class="more" @tap="onCancel" wx:if="{{showModal}}" animation="{{goimage}}"/>
+    <view class="modal-dialog" wx:if="{{ showModal }}" animation="{{ showSearch }}">
+      <view class="item" @tap="gosrarch">
+        <image src="https://static.airbob.org/image/page/library/search.png"/>
+        <view class="item-text">
+          <view>图书检索</view>
+          <view class="hhh">检索南邮图书馆书目</view>
+        </view>
+      </view>
+      <view class="searchData" animation="{{searchData}}">
+        <form bindsubmit="searchBook">
+          <view class="formData" animation="{{formData}}">
+            <input placeholder="图书名／作者／关键词" placeholder-style="font-size: 28rpx; color: #8b8b8b; margin-left: 24rpx" name="bookInfo"/>
+            <button formType="submit" class="formButton">
+              <image src="https://static.airbob.org/image/page/library/search2.png" style="height: 38rpx; width: 38rpx; margin:16rpx 20rpx 20rpx -6rpx"/>
+            </button>
+          </view>
+        </form>
+        <text wx:if="{{ searchOut }}" class="outPut">检索结果</text>
+        <block wx:if="{{ searchOut }}">
+          <view wx:for="{{ accessBooks }}" wx:key="index" class="accessBooks">
+            <view class="dot" style="background-color: {{ item.number === 0 ? '#ff5a00' : '#02db02'}}"></view>
+            <view class="accessBook">
+              <text class="name">{{ item.name }}</text>
+              <text class="detail">{{'作者：' + item.author }}</text>
+              <text class="detail">{{'出版社：' + item.press }}</text>
+              <text class="detail">{{'索书号：' + item.callNumber }}</text>
+              <text class="detail">{{'可借数' + item.numbers }}</text>
+            </view>
+          </view>
+        </block>
+      </view>
+      <view class="ln"></view>
+      <view class="item" @tap="showLibraryData">
+        <image src="https://static.airbob.org/image/page/library/seat.png"/>
+        <view class="item-text">
+          <view style="color: #007ece">座位查询</view>
+          <view class="hhh">查询图书馆座位余量</view>
+        </view>
+      </view>
+      <view class="last" animation="{{LibraryData}}">
+        <repeat for="{{floors}}" key="key" index="index" item="item">
+          <seats-card :lib.sync="item"/>
+        </repeat>
+      </view>
+    </view>
+    <top avatar="https://static.airbob.org/image/page/library/icon1.png" hideImage="https://static.airbob.org/image/page/library/icon2.png"
+    hideWidth="306rpx" hideHeight="366rpx" bgcolor="linear-gradient(to right, rgb(89,211,251), rgb(110,226,251) 96%, rgb(136,244,250))"
+    avatarHeight="131rpx" avatarWidth="114rpx" hideRight="72rpx" toHide/>
+    <view class = "score-main" style="width: 500rpx">
+      <view class="score-main-left" style="width:150rpx">
+        <view class="score-main-top">正在借阅</view>
+        <view class="score-main-all">{{onBorrowing}}<span class="bang">本</span></view>
+      </view>
+      <view class="score-main-right" style="margin-top:-5rpx; float:top">
+        <view><span class="score-teacher">累计借阅：</span>{{allBorrowing + "本"}}</view>
+        <view><span class="score-teacher">当前欠款：</span>{{nowArrears + "元"}}</view>
+        <view><span class="score-teacher">最近须还：</span>{{leastDate}}</view>
+      </view>
+    </view>
+    <view class="moreBook">已借书目</view>
+    <image src="https://static.airbob.org/image/page/library/plus.png" class="more" @tap="search" wx:if="{{!showModal}}"/>
+    <view class="books">
+      <repeat for="{{ borrowBooks }}" key="index" index="index" item="item">
+        <QyBook :book.sync="item"></QyBook>
+      </repeat>
+    </view>
+    <!-- <change-password :mask.sync="showWindow"></change-password> -->
+
+    <change-password wx:if="{{shouldChangePassword}}" type="library" :shouldShow.sync="shouldChangePassword"/>
+  </view>
+</template>
+
+<script>
+import wepy from "wepy";
+import book from "../components/card/LibraryCard";
+import Top from "../components/card/Top";
+import seatsCard from "../components/seats-card";
+// import changePassword from "../components/card/updatePassword";
+import ChangePassword from "@/components/card/ChangePassword";
+// import { api } from "@/utils/api.js";
+
+export default class Library extends wepy.page {
+  config = {
+    navigationBarTitleText: "NJUPT",
+    navigationBarBackgroundColor: "#50cefd",
+    navigationBarTextStyle: "white"
+  };
+
+  data = {
+    more: "no",
+    goimage: {},
+    showSearch: {},
+    searchData: {},
+    formData: {},
+    LibraryData: {},
+    showModal: false,
+    showWindow: false,
+    onBorrowing: 0,
+    allBorrowing: 0,
+    nowArrears: 0,
+    leastDate: "",
+    searchOut: false,
+    accessBooks: [],
+    borrowBooks: [],
+    floors: [
+      {
+        floor: "二",
+        rooms: []
+      },
+      {
+        floor: "三",
+        rooms: []
+      },
+      {
+        floor: "四",
+        rooms: []
+      },
+      {
+        floor: "五",
+        rooms: []
+      }
+    ],
+    shouldChangePassword: false
+  };
+
+  components = {
+    QyBook: book,
+    top: Top,
+    "seats-card": seatsCard,
+    "change-password": ChangePassword
+  };
+
+  methods = {
+    search() {
+      this.showModal = true;
+      this.$apply();
+    },
+    async searchBook(e) {
+      console.log(e);
+      const {
+        data: { data: details }
+      } = await wepy.request({
+        url: `${this.$parent.globalData.requestUrl}crawl/library/search`,
+        method: "POST",
+        data: {
+          content: e.detail.value.bookInfo,
+          page: 1
+        }
+      });
+      console.log(details);
+      if (details.length === 0) {
+        wepy.showToast({
+          title: "查无此书哦～",
+          icon: "none",
+          duration: 2000
+        });
+      } else {
+        this.accessBooks = details;
+        this.searchOut = true;
+        let h = 350 * this.accessBooks.length + "rpx";
+        let H = 200 + 350 * this.accessBooks.length + "rpx";
+        let searchData = wepy.createAnimation({
+          duration: 100,
+          timingFunction: "ease"
+        });
+        let showSearch = wepy.createAnimation({
+          duration: 100,
+          timingFunction: "ease"
+        });
+        showSearch.height(H).step();
+        searchData.height(h).step();
+        this.showSearch = showSearch;
+        this.searchData = searchData;
+        this.$apply();
+      }
+    },
+    hideModal() {
+      this.showModal = false;
+    },
+    hideWindow() {
+      this.showWindow = false;
+    },
+    onCancel() {
+      this.showModal = false;
+    },
+    gosrarch() {
+      let h = "0";
+      let H = "332rpx";
+      let formH = "0";
+      let o = 0;
+      let top = "442rpx";
+      let imgtop = "391rpx";
+      if (this.more === "no") {
+        h = "300rpx";
+        H = "632rpx";
+        top = "160rpx";
+        imgtop = "109rpx";
+        formH = "69rpx";
+        o = 1;
+        this.more = "show";
+      } else if (this.more === "show") {
+        h = "0";
+        H = "332rpx";
+        top = "442rpx";
+        imgtop = "391rpx";
+        formH = "0";
+        o = 0;
+        this.more = "no";
+      }
+      let box1 = wepy.createAnimation({
+        duration: 100,
+        timingFunction: "ease"
+      });
+      let box2 = wepy.createAnimation({
+        duration: 100,
+        timingFunction: "ease"
+      });
+      let box3 = wepy.createAnimation({
+        duration: 100,
+        timingFunction: "ease"
+      });
+      let LibraryData = wepy.createAnimation({
+        duration: 100,
+        timingFunction: "ease"
+      });
+      let formData = wepy.createAnimation({
+        duration: 100,
+        timingFunction: "ease"
+      });
+      box1
+        .top(top)
+        .height(H)
+        .step();
+      this.showSearch = box1;
+      box3.top(imgtop).step();
+      this.goimage = box3;
+      box2.height(h).step();
+      this.searchData = box2;
+      LibraryData.height(0).step();
+      this.LibraryData = LibraryData;
+      formData
+        .height(formH)
+        .opacity(o)
+        .step();
+      this.formData = formData;
+      this.searchOut = false;
+      this.$apply();
+    },
+    showLibraryData() {
+      let h = "0";
+      let H = "332rpx";
+      let top = "442rpx";
+      let imgtop = "391rpx";
+      if (this.more === "no") {
+        h = "1400rpx";
+        H = "1730rpx";
+        top = "160rpx";
+        imgtop = "109rpx";
+        this.more = "show";
+      } else if (this.more === "show") {
+        h = "0";
+        H = "332rpx";
+        top = "442rpx";
+        imgtop = "391rpx";
+        this.more = "no";
+      }
+      let box1 = wepy.createAnimation({
+        duration: 100,
+        timingFunction: "ease"
+      });
+      let box2 = wepy.createAnimation({
+        duration: 100,
+        timingFunction: "ease"
+      });
+      let box3 = wepy.createAnimation({
+        duration: 100,
+        timingFunction: "ease"
+      });
+      let searchData = wepy.createAnimation({
+        duration: 100,
+        timingFunction: "ease"
+      });
+      let formData = wepy.createAnimation({
+        duration: 100,
+        timingFunction: "ease"
+      });
+      box3.top(imgtop).step();
+      this.goimage = box3;
+      box1
+        .top(top)
+        .height(H)
+        .step();
+      this.showSearch = box1;
+      box2.height(h).step();
+      this.LibraryData = box2;
+      searchData.height(0).step();
+      this.searchData = searchData;
+      formData
+        .height(0)
+        .opacity(0)
+        .step();
+      this.formData = formData;
+      this.searchOut = false;
+      this.$apply();
+    }
+  };
+  async initSeats() {
+    let that = this;
+    const {
+      data: { data: seats, success }
+    } = await wepy.request({
+      url: `${this.$parent.globalData.requestUrl}crawl/library/seat`
+    });
+    if (!success) {
+      this.shouldChangePassword = true;
+      this.$apply();
+      return;
+    }
+    for (let i = 0; i < 4; i++) {
+      that.floors[i].rooms = [];
+      that.$apply();
+    }
+    for (let i = 0; i < seats.length; i++) {
+      let room = {};
+      room.name = seats[i].place;
+      room.totalSeats = seats[i].total;
+      room.curSeats = seats[i].available;
+      if (seats[i].location === "二层") {
+        that.floors[0].rooms.push(room);
+      } else if (seats[i].location === "三层") {
+        that.floors[1].rooms.push(room);
+      } else if (seats[i].location === "四层") {
+        that.floors[2].rooms.push(room);
+      } else if (seats[i].location === "五层") {
+        that.floors[3].rooms.push(room);
+      }
+    }
+    that.$apply();
+  }
+  async initBorrowBooks() {
+    const {
+      data: { data: borrowBooks },
+      errMsg
+    } = await wepy.request({
+      url: `${this.$parent.globalData.requestUrl}crawl/library/borrowbook`,
+      method: "POST"
+    });
+    // console.log(borrowBooks);
+    this.onBorrowing = borrowBooks.length;
+    this.leastDate = this.onBorrowing === 0 ? "无" : borrowBooks[0].deadline;
+    this.borrowBooks = borrowBooks;
+    this.borrowBooks.map(book => {
+      const {
+        data: { data: details }
+      } = wepy.request({
+        url: `${this.$parent.globalData.requestUrl}crawl/library/details`,
+        method: "POST",
+        data: {
+          marc_no: book.marc_no
+        }
+      });
+      book.bookId = book.marc_no;
+      book.author = details.bookDetail.author;
+      book.press = details.bookDetail.press;
+      book.type = details.bookDetail.type;
+      book.ISBN = details.bookDetail.ISBN;
+      book.price = details.bookDetail.price;
+    });
+    if (errMsg === "需要绑定") {
+      this.showWindow = true;
+    }
+    this.$apply();
+  }
+  async initTimes() {
+    const {
+      data: { data: times }
+    } = await wepy.request({
+      url: `${this.$parent.globalData.requestUrl}crawl/library/times`,
+      method: "POST"
+    });
+    this.allBorrowing = times;
+    this.$apply();
+    // console.log(times);
+  }
+  async initMoney() {
+    const {
+      data: { data: money }
+    } = await wepy.request({
+      url: `${this.$parent.globalData.requestUrl}crawl/library/money`,
+      method: "POST"
+    });
+    this.nowArrears = money;
+    this.$apply();
+    // console.log(money);
+  }
+  async onLoad() {
+    this.initSeats();
+    this.initBorrowBooks();
+    this.initTimes();
+    this.initMoney();
+  }
+}
+</script>
+
+<style lang="stylus" scoped>
+@import '../assets/stylus/main'
+
+.page
+  min-height 1300rpx
+  width 100vw
+  height auto
+
+.container
+  display flex
+  flex-direction column
+  justify-content flex-start
+  align-items center
+
+.topview .maininfo .avatar-wrapper .avatar._43bdbb6
+  position relative
+  top 11rpx !important
+  left -2rpx !important
+  width 116rpx
+  height 109rpx
+  border-radius 50%
+
+.mine
+  display flex
+  flex-direction row
+  justify-content space-around
+  align-items center
+
+.score-main
+  position absolute
+  width 450rpx
+  height 158rpx
+  top 99rpx
+  left 214rpx
+  z-index 10
+  .score-main-left
+    float left
+    width 197rpx
+    height 102rpx
+    border-right 3rpx solid rgb(139, 139, 139)
+    .score-main-top
+      position relative
+      line-height 36rpx
+      font-family PingFangSC-Light
+      font-size 28rpx
+      color rgb(139, 139, 139)
+    .score-main-all
+      position relative
+      font-size 80rpx
+      line-height 36rpx
+      margin-top 19rpx
+      font-family PingFangSC-Semibold
+      color rgb(12, 79, 25)
+      .bang
+        font-family PingFangSC-Light
+        font-size 28rpx
+        color rgb(139, 139, 139)
+  .score-main-right
+    float left
+    margin-top 24rpx
+    margin-left 27rpx
+    font-family PingFangSC-Light
+    font-size 28rpx
+    color rgb(12, 79, 25)
+    .score-teacher
+      color rgb(139, 139, 139)
+  .score-update
+    float left
+    margin-top 27rpx
+    font-family PingFangSC-Light
+    line-height 36rpx
+    font-size 28rpx
+    color rgb(27, 27, 27)
+
+.more
+  position absolute
+  left 606rpx
+  top 391rpx
+  width 101rpx
+  height 101rpx
+  border-radius 100rpx
+  z-index 20
+
+.moreBook
+  position absolute
+  left 44rpx
+  top 438rpx
+  font-family PingFangSC-Medium
+  font-size 40rpx
+  color #1b1b1b
+
+.books
+  position absolute
+  top 523rpx
+  left 42rpx
+
+.modal-mask
+  width 100%
+  height 100%
+  position fixed
+  top 0
+  left 0
+  background #000
+  opacity 0.5
+  overflow hidden
+  z-index 30
+  color #fff
+
+.modal-dialog
+  background-color #ffffff
+  width 569rpx
+  height 332rpx
+  overflow hidden
+  position absolute
+  top 442rpx
+  left 86rpx
+  z-index 40
+  border-radius 20rpx
+  display flex
+  flex-direction column
+  justify-content space-between
+  align-items center
+  .ln
+    width 100%
+    height 1rpx
+    margin 0
+    border solid 1rpx #dcdcdc
+  .searchData
+    width 100%
+    height 0
+    background-color #eeeeee
+    .outPut
+      font-size 28rpx
+      color #006d08
+      margin-left 36rpx
+    .accessBooks
+      display flex
+      flex-direction row
+      justify-content flex-start
+      align-items flex-start
+      margin 34rpx
+      .dot
+        width 16rpx
+        height 16rpx
+        border-radius 50%
+        margin-top 17rpx
+      .accessBook
+        display flex
+        flex-direction column
+        justify-content center
+        align-items flex-start
+        margin-left 17rpx
+        .name
+          font-size 34rpx
+          color #2b2b2b
+        .detail
+          font-size 26rpx
+          color #8b8b8b
+    .formData
+      width 516rpx
+      height 0
+      opacity 0
+      margin 36rpx auto
+      display flex
+      flex-direction row
+      justify-content center
+      align-items center
+      input
+        width 435rpx
+        height 69rpx
+        background-color #ffffff
+        border-radius 20rpx
+        padding-left 20rpx
+      .formButton
+        height 69rpx
+        width 81rpx
+        border-radius 0 20rpx 20rpx 0
+        background #959595
+        z-index 50
+        margin-left -30rpx
+  .last
+    width 100%
+    height 0
+    background-color #eeeeee
+  .item
+    height 166rpx
+    width 363rpx
+    margin-left -90rpx
+    display flex
+    flex-direction row
+    justify-content space-between
+    align-items center
+    image
+      width 81rpx
+      height 81rpx
+    .item-text
+      font-family PingFangSC-Medium
+      font-size 40rpx
+      color #006d08
+      .hhh
+        font-size 28rpx
+        color #8b8b8b
+</style>

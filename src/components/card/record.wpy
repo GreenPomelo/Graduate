@@ -1,0 +1,85 @@
+<template lang="pug">
+view.container
+  view.top
+    span.circle(wx:if="{{record.isOut !== undefined}}" class="{{record.isOut ? '' : 'in'}}")
+    span.circle(wx:elif="{{record.level}}" class="{{record.level === 1 ? 'optimal' : record.level === 2 ? 'good' : 'just-so-so'}}")
+    | {{record.text}}
+  view.bottom
+    repeat(wx:if="{{record.details}}" for="{{record.details}}" key="key" index="index" item="info")
+      view.detail-info(wx:if="{{index === 0}}") 编号：{{info}}
+      view.detail-info(wx:elif="{{index === 1}}") 教师：{{info}}
+      view.detail-info(wx:elif="{{index === 2}}") 学分：{{info}}
+    view.result(wx:if="{{record.score}}") {{record.score}}
+    view.result-type(wx:if="{{record.type}}") {{record.type}}
+    text(wx:if="{{record.desc}}") {{record.desc}}
+  line(marginLeft="18%")
+</template>
+
+<script>
+import wepy from "wepy";
+import Line from "../Line";
+
+export default class Record extends wepy.component {
+  props = {
+    record: {
+      type: Object
+    }
+  };
+
+  components = {
+    line: Line
+  };
+}
+</script>
+<style lang="stylus" scoped>
+@import '../../assets/stylus/main'
+
+.container
+  margin 0 0 30rpx 52rpx
+  width 698rpx
+  .top
+    width 698rpx
+    line-height 34rpx
+    font-size 34rpx
+    font-weight 700
+    .circle
+      display inline-block
+      margin-right 35rpx
+      width 17rpx
+      height 17rpx
+      border-radius 50%
+      background #02db02
+      &.in
+        background #ff5a00
+      &.optimal
+        background #02db02
+      &.good
+        background #ffd200
+      &.just-so-so
+        background #ff5a00
+  .bottom
+    margin 22rpx 0 0 58rpx
+    padding-bottom 35rpx
+    position relative
+    font-size 26rpx
+    line-height 26rpx
+    .result
+      position absolute
+      right 55rpx
+      top -50rpx
+      font-size 60rpx
+      color rgb(27, 27, 27)
+    .result-type
+      position absolute
+      right 55rpx
+      top 0rpx
+      font-size 26rpx
+      line-height 46rpx
+      color rgb(178, 178, 178)
+    .detail-info
+      margin-top 6rpx
+      height 30rpx
+      font-size 26rpx
+      line-height 46rpx
+      color rgb(139, 139, 139)
+</style>

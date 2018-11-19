@@ -1,0 +1,36 @@
+vendors = official
+
+@keyframes fadeInUp
+  from
+    transform translate3d(0, 0, 0)
+  to
+    transform translate3d(0, -110%, 0)
+
+.fadeInUp
+  animation 0.5s fadeInUp ease-out both
+
+@keyframes fadeInUpReverse
+  from
+    transform translate3d(0, 50%, 0)
+  to
+    transform translate3d(0, 0, 0)
+
+.fadeInUpReverse
+  animation 0.5s fadeInUpReverse ease-out both
+
+@keyframes fadeOutLeft
+  to
+    opacity 0
+    transform translate3d(-130%, 0, 0)
+
+.fadeOutLeft
+  animation 0.5s fadeOutLeft ease-out both
+
+@keyframes fadeIn
+  from
+    opacity 0
+  to
+    opacity 1
+
+.fadeIn
+  animation 0.5s fadeIn ease-out both

@@ -1,0 +1,157 @@
+<template lang="pug">
+view.campus-cardz
+  top( :toHide="toHide" avatar="https://static.airbob.org/image/page/campusCard/icon-card.png" hideImage="https://static.airbob.org/image/page/campusCard/bg-card.png" :balance.sync="balance" :name.sync="name" :cardId.sync="cardId")
+
+  view.fuc 常用功能
+  repeat(for="{{recharges}}" key="key" index="index" item="item")
+    recharge( :recharge="item")
+
+  view.line-contain
+    view.rec 消费记录
+  repeat(for="{{records}}" key = "key" index="index" item="item")
+    record( :record="item")
+
+  change-password(wx:if="{{shouldChangePassword}}" type="ykt" :shouldShow.sync="shouldChangePassword")
+</template>
+
+<script>
+import wepy from "wepy";
+import Top from "@/components/card/Top";
+import Recharge from "@/components/card/recharge";
+import Record from "@/components/card/record";
+import ChangePassword from "@/components/card/ChangePassword";
+import { api } from "@/utils/api.js";
+
+export default class campusCard extends wepy.page {
+  config = {
+    navigationBarTitleText: "校园卡",
+    navigationBarBackgroundColor: "#FFD323",
+    navigationBarTextStyle: "white"
+  };
+
+  data = {
+    balance: "0",
+    name: "柚子",
+    cardId: "110",
+    nowPage: 1,
+    toHide: false,
+    recharges: [
+      {
+        link: `rechargeCard`,
+        imageSrc: `https://static.airbob.org/image/page/campusCard/card-1.png`,
+        title: `银行卡转账`,
+        desc: `校园卡与银行卡转账`,
+        imageHeight: `174rpx`
+      },
+      {
+        link: `rechargeInternetFee`,
+        imageSrc: `https://static.airbob.org/image/page/campusCard/card-2.png`,
+        title: `网费充值`,
+        desc: `充值校园网网费`,
+        imageHeight: `161rpx`
+      },
+      {
+        link: `rechargeElecFee`,
+        imageSrc: `https://static.airbob.org/image/page/campusCard/card-3.png`,
+        title: `宿舍电费充值`,
+        desc: `充值宿舍电费`,
+        imageHeight: `187rpx`
+      }
+    ],
+    records: [],
+    shouldChangePassword: false
+  };
+
+  components = {
+    top: Top,
+    recharge: Recharge,
+    record: Record,
+    "change-password": ChangePassword
+  };
+  async getTheRecord(e) {
+    const that = this;
+    const findTheRecord = await api.yktRecords(e);
+    if (findTheRecord.data.data !== null) {
+      for (let i of findTheRecord.data.data) {
+        let result = {
+          isOut: i.tranamt <= 0,
+          text: i.occtime,
+          desc: `${i.mercname} ${i.tranname} ${Math.abs(i.tranamt)}元`
+        };
+        that.records.push(result);
+      }
+      that.$apply();
+    }
+  }
+  async getBalance() {
+    const getBalance = await api.yktInfo();
+    wepy.hideLoading();
+    if (getBalance.data.success) {
+      let resData = getBalance.data.data;
+      this.balance = parseFloat(
+        (Number(resData.db_balance) + Number(resData.unsettle_amount)) / 100
+      );
+      this.name = resData.name;
+      this.cardId = resData.sno;
+    } else {
+      this.shouldChangePassword = true;
+    }
+    this.$apply();
+  }
+  async init() {
+    wepy.showLoading();
+    this.getBalance();
+    this.getTheRecord(this.nowPage);
+  }
+  onLoad() {
+    this.init();
+  }
+  onShow() {
+    this.getBalance();
+  }
+  async onReachBottom() {
+    this.getTheRecord(++this.nowPage);
+  }
+}
+</script>
+
+<style lang="stylus" scoped>
+@import '../assets/stylus/main'
+
+.campus-cardz
+  position relative
+
+.fuc
+  position absolute
+  top 438rpx
+  left 44rpx
+  margin-top -23rpx
+  line-height 40rpx
+  font-size title-font-size
+  font-weight 700
+
+.line-contain
+  height 40rpx
+  margin-top 48rpx
+  margin-left 44rpx
+  margin-bottom 46rpx
+
+.rec
+  float left
+  line-height 40rpx
+  font-size title-font-size
+  font-weight 700
+
+.Polyline
+  float right
+  height 22rpx
+  line-height 22rpx
+  font-size 22rpx
+  color rgb(139, 139, 139)
+  margin-right 50rpx
+
+.zxt
+  position relative
+  height 24rpx
+  width 43rpx
+</style>

@@ -1,0 +1,99 @@
+<template lang="pug">
+card.course-item( :cardId.sync="course.id")
+  view.tag
+    text.text(wx:if="{{course.status === 0}}") 正在上课
+    text.text(wx:elif="{{course.status === 1}}") 即将开始
+    text.text(wx:elif="{{course.status === 2}}") 还未上课
+    text.text(wx:elif="{{course.status === 3}}") 课程结束
+    text.text(wx:else) WRONG!
+  view.title
+    text.text {{course.name}}
+  view.bottom-info
+    view.desc
+      text.section(wx:if="{{course.sectionstart === 10}}") 选修课
+      text.section(wx:else) 第{{course.sectionstart}}-{{course.sectionend}}节
+      text.duration {{course.start}}-{{course.end}}
+    view.locale
+      text {{course.locale}}
+</template>
+
+<script>
+import wepy from "wepy";
+import BaseCourseCard from "@/components/card/BaseCourseCard";
+
+export default class CourseCard extends wepy.component {
+  props = {
+    course: {
+      type: Object
+    }
+  };
+
+  components = {
+    card: BaseCourseCard
+  };
+}
+</script>
+
+<style lang="stylus" scoped>
+@import '../../assets/stylus/main'
+
+.course-item
+  display inline-block
+  .tag
+    margin 0 0 0 -8rpx
+    // padding-top 80rpx
+    padding-top 26rpx
+    padding-left 36rpx
+  .title
+    {title}
+    margin-top 14rpx
+    padding-left 36rpx
+    width 90%
+    font-size 31rpx
+    // white-space normal
+  .bottom-info
+    position absolute
+    bottom 30rpx
+    left 40rpx
+    .desc
+      {sub-font}
+      .duration
+        margin-left 20rpx
+    .locale
+      {title}
+      font-size 31rpx
+.course-item:nth-of-type(2)
+  {card-bg-color-2}
+  .tag
+    tag(card-2-color)
+
+.course-item:nth-of-type(3)
+  {card-bg-color-3}
+  .tag
+    tag(card-3-color)
+
+.course-item:nth-of-type(4)
+  {card-bg-color-4}
+  .tag
+    tag(card-4-color)
+
+.course-item:nth-of-type(5)
+  {card-bg-color-5}
+  .tag
+    tag(card-5-color)
+
+.course-item:nth-of-type(6)
+  {card-bg-color-6}
+  .tag
+    tag(card-6-color)
+
+.course-item:nth-of-type(7)
+  {card-bg-color-6}
+  .tag
+    tag(card-6-color)
+
+.course-item:nth-of-type(8)
+  {card-bg-color-6}
+  .tag
+    tag(card-6-color)
+</style>

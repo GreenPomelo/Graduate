@@ -1,0 +1,89 @@
+<template lang="pug">
+view.recharge-amount
+  view.title 充值金额
+  view.amount-wrapper
+    repeat(for="{{amountBtns}}" key="key" index="index" item="btn")
+      view.amount(class="{{btn.isActive ? 'active' : ''}}" @tap="handleClickAmountBtn({{btn.amount}})") {{btn.amount}}元
+  view.other-amount
+    text.label 其它金额
+    input.amount-input( type="digit" @input="handleAmountInput" disable="{{isDormPickerActive ? true : false}}" style="{{isDormPickerActive ? 'display:none;' : ''}}" placeholder="请输入金额" placeholder-style="{{placeholderStyles}}")
+  line(marginLeft="10%")
+</template>
+
+<script>
+import wepy from "wepy";
+import Line from "../Line";
+
+export default class RechargeAmount extends wepy.component {
+  props = {
+    amount: {
+      twoWay: true
+    },
+    isDormPickerActive: {
+      type: Boolean
+    }
+  };
+
+  data = {
+    amountBtns: [
+      { amount: 20, isActive: false },
+      { amount: 50, isActive: false },
+      { amount: 100, isActive: false },
+      { amount: 200, isActive: false }
+    ]
+  };
+
+  components = { line: Line };
+
+  methods = {
+    handleAmountInput(event) {
+      const { value } = event.detail;
+      this.amount = Number(value) || 0;
+      const activeBtn = this.amountBtns.find(x => x.isActive === true);
+      if (activeBtn !== undefined) activeBtn.isActive = false;
+    },
+    handleClickAmountBtn(amount) {
+      this.amount = amount;
+      this.amountBtns.map(x => (x.isActive = x.amount === amount));
+    }
+  };
+}
+</script>
+
+<style lang="stylus" scoped>
+@import '../../assets/stylus/main'
+
+.recharge-amount
+  margin-top 48rpx
+  .line
+    {line}
+  .title
+    font-size title-font-size
+    line-height title-font-size
+    font-weight 700
+  .amount-wrapper
+    display flex
+    margin-top 36rpx
+    justify-content space-between
+    .amount
+      width 148rpx
+      height 78rpx
+      font-size sub-font-size
+      line-height 78rpx
+      text-align center
+      box-sizing border-box
+      border 1rpx solid #f7c708
+      border-radius 10rpx
+      &.active
+        background linear-gradient(0deg, #ffd200 0%, #ffe823 100%), linear-gradient(#fff, #fff)
+  .other-amount
+    display flex
+    height 90rpx
+    font-size sub-font-size
+    justify-content space-between
+    align-items center
+    .label
+      color sub-color
+    .amount-input
+      text-align right
+</style>

@@ -1,0 +1,135 @@
+<template lang="pug">
+view.container
+  view.topview(style="background:{{bgcolor}}")
+    view.innertop(style="background:{{bgcolor}}")
+    view.maininfo
+      view.avatar-wrapper
+        image.avatar(src="{{avatar}}" style="height:{{avatarHeight}};width:{{avatarWidth}}")
+      view(hidden="{{toHide}}")
+        view.avatar-info
+          view.info-top 当前余额
+          view.info-down
+            span.import {{balance}}
+            span 元
+        view.id {{name}} {{cardId}}
+    image.hideimage(style="height:{{hideHeight}};width:{{hideWidth}};right:{{hideRight}}" src="{{hideImage}}")
+</template>
+
+<script>
+import wepy from "wepy";
+export default class Top extends wepy.component {
+  props = {
+    avatar: String,
+    avatarHeight: String,
+    avatarWidth: String,
+    hideImage: String,
+    hideHeight: String,
+    hideWidth: String,
+    bgcolor: String,
+    hideRight: String,
+    toHide: {
+      default: true,
+      type: Boolean
+    },
+    balance: {
+      default: 0,
+      type: String
+    },
+    name: {
+      default: "柚子",
+      type: String
+    },
+    cardId: {
+      default: "111",
+      type: String
+    }
+  };
+}
+</script>
+
+<style lang="stylus" scoped>
+@import '../../assets/stylus/main'
+
+span
+  color rgb(139, 139, 139)
+  font-size 28rpx
+
+.container
+  height 463rpx
+  width 750rpx
+  overflow hidden
+
+.topview
+  position relative
+  background linear-gradient(167deg, rgb(255, 211, 35), rgb(254, 221, 89) 96%, rgb(252, 228, 131))
+  width 750rpx
+  height 300rpx
+  z-index 10
+  .innertop
+    background linear-gradient(to right, rgb(255, 211, 35), rgb(254, 221, 89) 96%, rgb(252, 228, 131))
+    width 777rpx
+    height 150rpx
+    position absolute
+    top 300rpx
+    text-align center
+    transform-origin right
+    -webkit-transform rotate(10deg)
+    -moz-transform rotate(10deg)
+    z-index 0
+  .maininfo
+    position relative
+    top 78rpx
+    z-index 1
+    margin-left 53rpx
+    width 697rpx
+    height 129rpx
+    .avatar-wrapper
+      float left
+      width 129rpx
+      height 129rpx
+      border-radius 50%
+      background #fff
+      overflow hidden
+      .avatar
+        position relative
+        top 23rpx
+        left -7rpx
+        width 116rpx
+        height 109rpx
+        border-radius 50%
+    .avatar-info
+      float left
+      height 129rpx
+      padding-left 33rpx
+      display flex
+      flex-direction column
+      justify-content center
+      .import
+        font-size 61rpx
+        font-weight bold
+        color rgb(255, 115, 13)
+      .info-top
+        color rgb(139, 139, 139)
+        height 28rpx
+        line-height 28rpx
+        font-size 28rpx
+      .info-down
+        margin-top 14rpx
+        height 61rpx
+        line-height 61rpx
+        font-size 61rpx
+    .id
+      float left
+      margin-top 20rpx
+      font-size 34rpx
+      line-height 34rpx
+      height 34rpx
+      width 700rpx
+  .hideimage
+    position absolute
+    top 121rpx
+    right 16rpx
+    width 390rpx
+    height 345rpx
+    color #FDEFB4
+</style>

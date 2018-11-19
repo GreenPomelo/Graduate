@@ -1,0 +1,116 @@
+<template lang="pug">
+view.message
+  view.message-list
+    repeat(for="{{messages}}" key="key" index="index" item="item")
+      card( :message.sync="item" @delete.user="deleteMessage" @read.user="readMessage")
+</template>
+
+<script>
+import wepy from "wepy";
+import MessageCard from "../components/message/MessageCard";
+import TimeMixin from "@/mixins/time";
+import { api } from "@/utils/api.js";
+
+export default class Message extends wepy.page {
+  config = {
+    navigationBarTitleText: "消息盒子",
+    navigationBarBackgroundColor: "#19cf9a",
+    navigationBarTextStyle: "white"
+  };
+
+  data = {
+    messages: []
+  };
+
+  components = {
+    card: MessageCard
+  };
+
+  mixins = [TimeMixin];
+
+  methods = {
+    async deleteMessage(id) {
+      api.deleteMessage(id);
+      this.updateStorageMessage();
+
+      this.messages.map(x => {
+        if (x.id === id) {
+          x.animate = "fadeOutLeft";
+        } else if (x.id > id) {
+          x.animate = "fadeInUp";
+        }
+      });
+
+      setTimeout(() => {
+        this.messages.map(x => (x.animate = ""));
+        this.messages = this.messages.filter(x => x.id !== id);
+        this.$apply();
+      }, 500);
+    },
+    async readMessage(id) {
+      const message = this.messages.find(x => x.id === id);
+      if (!message.isReaded) {
+        api.readMessage(id);
+        this.updateStorageMessage();
+        message.isReaded = true;
+      }
+    }
+  };
+
+  mapTypeToBg(type) {
+    const bgAry = {
+      at: "https://static.airbob.org/image/page/message/at1.png",
+      card: "https://static.airbob.org/image/page/message/card1.png",
+      feedback: "https://static.airbob.org/image/page/message/feedback1.png",
+      notice: "https://static.airbob.org/image/page/message/notice1.png"
+    };
+    return bgAry[type];
+  }
+
+  mapMessages(messages) {
+    const CARD_TYPE = [``, `at`, `card`, `feedback`, `notice`];
+    return messages
+      .map(
+        ({ id, type, title, content, createDate: time, read: isReaded }) => ({
+          id,
+          type: CARD_TYPE[type],
+          title,
+          content,
+          time,
+          isReaded,
+          isFolded: true,
+          animate: ""
+        })
+      )
+      .sort((a, b) => b.time - a.time)
+      .map(x => {
+        x.bgUrl = this.mapTypeToBg(x.type);
+        return x;
+      })
+      .map(x => {
+        x.time = this.timestampFromNow(x.time);
+        return x;
+      });
+  }
+
+  async updateStorageMessage() {
+    wepy.setStorageSync(`notification`, JSON.stringify(await api.message()));
+  }
+
+  onLoad() {
+    this.messages = this.mapMessages(
+      JSON.parse(wepy.getStorageSync(`notification`))
+    );
+  }
+}
+</script>
+
+<style lang="stylus" scoped>
+@import '../assets/stylus/main'
+
+.message
+  padding-bottom 40rpx
+  color main-color
+  .message-list
+    margin 38rpx
+</style>

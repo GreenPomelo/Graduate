@@ -1,0 +1,47 @@
+<template lang="pug">
+view.card( @tap="navigateTo({{card.navigateTo}})")
+  image.img(src="{{card.imgLink}}")
+  text.title {{card.title}}
+  text.desc {{card.desc}}
+</template>
+
+<script>
+import wepy from "wepy";
+import navigateMixin from "@/mixins/navigate";
+
+export default class ProfileCard extends wepy.component {
+  props = {
+    card: {
+      type: Object
+    }
+  };
+
+  mixins = [navigateMixin];
+}
+</script>
+
+<style lang="stylus" scoped>
+@import '../../assets/stylus/main'
+
+.card
+  {card}
+  padding 33rpx
+  margin-bottom 24rpx
+  box-shadow 0 0 30rpx rgba(11, 3, 5, 0.1)
+  border none
+  .title,
+  .desc
+    display block
+  .title
+    font-size list-font-size
+    font-weight 700
+  .desc
+    font-size sub-font-size
+    color sub-color
+  .img
+    width 24%
+    height 152rpx
+    position absolute
+    top 14rpx
+    right -10rpx
+</style>

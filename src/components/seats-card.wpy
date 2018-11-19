@@ -1,0 +1,131 @@
+<template>
+  <view class="floor-contanier">
+    <view class="floor-head">{{lib.floor}}层</view>
+    <view class="floor-room">
+      <repeat for="{{lib.rooms}}" key="key" index="index" item="item">
+        <view class="floor-item">
+          <view class="circleProgress-wrapper" style="background: {{item.bgc1}}">
+            <view class="right" style="-webkit-transform:rotate({{(item.curSeats/item.totalSeats)*360<=180?(item.curSeats/item.totalSeats)*360:0}}deg);background-color:{{(item.curSeats/item.totalSeats)*360<=180?'#f5f5f5':'#39c9ff'}};">
+              <view class="clip-right"></view>
+            </view>
+            <view class="left" style="-webkit-transform:rotate({{(item.curSeats/item.totalSeats)*360<=180?0:(item.curSeats/item.totalSeats-0.5)*360}}deg)">
+              <view class="clip-left"></view>
+            </view>
+            <view class="seats-left">{{item.curSeats}}</view>
+          </view>
+          <view class="floor-room-info">
+            <view style="font-size:28rpx;font-weight:bold">{{item.name}}</view>
+            <view style="font-size:24rpx;">总座位数：{{item.totalSeats}}</view>
+          </view>
+        </view>
+      </repeat>
+    </view>
+  </view>
+</template>
+
+<script>
+import wepy from "wepy";
+export default class extends wepy.component {
+  data = {
+    screenWidth: 0,
+    dpr: 0,
+    lib: {}
+  };
+  props = {
+    lib: Object
+  };
+  methods = {};
+  async onLoad() {
+    await wepy.getSystemInfo().then(res => {
+      this.screenWidth = parseInt(res.screenWidth);
+      this.dpr = res.pixelRatio;
+      console.log(this.dpr);
+    });
+    this.$apply();
+  }
+}
+</script>
+
+<style lang="stylus" scoped>
+.floor-contanier
+  width 750rpx
+  height auto
+  margin 30rpx 20rpx 10rpx 20rpx
+  font-size 30rpx
+  .floor-head
+    font-weight bold
+    margin-bottom 30rpx
+  .floor-room
+    width 750rpx
+    height auto
+    display flex
+    flex-direction column
+    justify-content flex-start
+    .floor-item
+      display flex
+      justify-content flex-start
+      align-items center
+      margin-bottom 20rpx
+      .circleProgress-wrapper
+        font-size 0rpx
+        width 100rpx
+        height 100rpx
+        position relative
+        border-radius 50%
+        background-color #39c9ff
+        .right
+          width 100rpx
+          height 100rpx
+          position absolute
+          border-radius 50%
+          top 0
+          left 0
+          background-color #f5f5f5
+          clip rect(0, auto, auto, 50rpx)
+          z-index 2
+          .clip-right
+            width 100rpx
+            height 100rpx
+            position absolute
+            top 0
+            left 0
+            rect(0, auto, auto, 50rpx)
+        .left
+          width 100rpx
+          height 100rpx
+          position absolute
+          border-radius 50%
+          top 0
+          left 0
+          background #f5f5f5
+          clip rect(0, 50rpx, auto, 0)
+          .clip-left
+            width 100rpx
+            height 100rpx
+            position absolute
+            top 0
+            left 0
+            rect(0, 50rpx, auto, 0)
+        .seats-left
+          position absolute
+          width 85rpx
+          height 85rpx
+          border-radius 50%
+          top 9.5rpx
+          left 9.5rpx
+          font-size 40rpx
+          line-height 83rpx
+          font-weight bolder
+          text-align center
+          background #ffffff
+          z-index 10
+      .floor-room-info
+        color #353535
+        width 260rpx
+        height 100rpx
+        display flex
+        flex-direction column
+        justify-content center
+        margin-right 42rpx
+        margin-left 30rpx
+</style>

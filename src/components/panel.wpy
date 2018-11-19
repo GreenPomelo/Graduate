@@ -1,0 +1,38 @@
+<template lang="pug">
+view.panel
+  view.title-bar
+    view.title-wrapper
+      text.title {{title}}
+    view.more
+      slot(name="more")
+  slot
+</template>
+
+<script>
+import wepy from "wepy";
+
+export default class Panel extends wepy.component {
+  props = {
+    title: {
+      type: String,
+      default: "课程提醒"
+    }
+  };
+}
+</script>
+
+<style lang="stylus" scoped>
+@import '../assets/stylus/main'
+
+.title-bar
+  display flex
+  margin-bottom 36rpx
+  padding 0 36rpx
+  font-size title-font-size
+  font-weight 700
+  justify-content space-between
+  align-items center
+
+.more
+  {sub-font}
+</style>

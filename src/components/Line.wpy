@@ -1,0 +1,20 @@
+<template lang="pug">
+view.line(style="margin-left: {{marginLeft}};")
+</template>
+
+<script>
+import wepy from "wepy";
+
+export default class Line extends wepy.component {
+  props = {
+    marginLeft: String
+  };
+}
+</script>
+
+<style lang="stylus" scoped>
+@import '../assets/stylus/main'
+
+.line
+  {line}
+</style>

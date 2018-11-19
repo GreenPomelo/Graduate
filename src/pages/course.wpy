@@ -1,0 +1,601 @@
+<template lang="pug">
+  view.course
+    view.hide-page( @tap='hideDetailCourse', hidden='{{swiperHide}}', animation='{{hideAnimation}}')
+    view.swiper-thing(animation='{{swiperAnimation}}')
+      view.swiper-item
+        view.course-container
+          view.course-name {{swiperCourse[0].name}}
+          view.course-info
+            view.detail-info
+              span 星期：
+              | {{swiperCourse[0].day}}
+            view.detail-info
+              span 教室：
+              | {{swiperCourse[0].locale}}
+            view.detail-info
+              span 时间：
+              | {{swiperCourse[0].sectionstart}}-{{swiperCourse[0].sectionend}}节
+            view.detail-info
+              span 教师：
+              | {{swiperCourse[0].teacher}}
+      view.swiper-behind-first
+      view.swiper-behind-second
+    view.animation-button( @tap='putAway')
+      view.animation-button-image
+    view.chooseItem(hidden='{{packup}}')
+      view.choose-item-container
+        view.change-choose
+          view.image-container
+          view.change-container 更改周别
+        scroll-view.topScroll(scroll-x='true', scroll-left='{{weekScorllLeft}}', bindscroll='scroll')
+          repeat(for='{{weeks}}', key='key', index='index', item='item')
+            view.course-choose( @tap='changeWeek', data-index='{{index}}', id='{{item}}', style="color:{{chosenWeek === item ? 'rgb(0,211,174)' : 'rgb(139,139,139)'}}")
+              view(style="height:50rpx;border-bottom:{{chosenWeek === item ? '1rpx solid rgb(0,211,174)' : 'rgb(139,139,139)'}}") {{item}}
+      view.choose-item-container
+        view.change-choose
+          view.image-container
+          view.change-container 更改学期
+        scroll-view.topScroll(scroll-x='true')
+          repeat(for='{{terms}}', key='key', index='index', item='item')
+            view.course-choose( @tap='changeTerm({{item}})', id='{{item}}', style="color:{{chosenTerm === item.requestTerm ? 'rgb(0,211,174)' : 'rgb(139,139,139)'}}") {{item.term}}
+    view.main(animation='{{animationData}}')
+      scroll-view.main-scroll(scroll-x='true')
+        view.column_1
+          repeat(for='{{classNumber}}', index='index', key='key', item='item')
+            view.left-column {{item}}
+        view.cover-column
+          repeat(for='{{nowCourse}}', index='index', key='key', item='item')
+            view.column(style="background:{{Day === index ? 'linear-gradient(rgb(255,255,255),rgba(193,252,241,0.49),' + (gradient - 2) + '%,rgba(130,248,227,0.49),' + gradient + '%,rgba(193,252,241,0.49),' + (gradient + 2) + '%,rgba(193,252,241,0.49),rgb(255,255,255))' : ''}}")
+              view.timeline(wx:if='{{Day === index}}', hidden='{{timeLineHide}}', style='top:{{timeLineTop}}rpx')
+              repeat(for='{{item}}', index='INDEX', item='ITEM')
+                view.course-item(style='top:{{ITEM.elementTop}};height:{{ITEM.elementHeight}};background:{{ITEM.bgc}};opacity:{{ITEM.opacity}};', @tap='showCourse', data-index='{{index}}', data-id='{{INDEX}}')
+                  view.class-name
+                    | {{ITEM.name}}
+                  view.classroom
+                    | {{ITEM.locale}}
+        view.lines_1
+          repeat(for='{{days}}', index='index', key='key', item='item')
+            view.top-line {{item}}
+        repeat(for='{{classNumber}}', index='index', key='key', item='item')
+          view.lines-top
+          view.lines
+
+    change-password(wx:if="{{shouldChangePassword}}" type="timeTable" :shouldShow.sync="shouldChangePassword")
+</template>
+
+<script>
+import wepy from "wepy";
+import ClassMixin from "../mixins/class";
+import courseTimeMixin from "../mixins/courseTime";
+import ChangePassword from "@/components/card/ChangePassword";
+import { api } from "@/utils/api.js";
+
+export default class Course extends wepy.page {
+  config = {
+    navigationBarTitleText: "课程表",
+    navigationBarBackgroundColor: "#00D3AE",
+    navigationBarTextStyle: "white",
+    enablePullDownRefresh: true
+  };
+
+  data = {
+    weekScorllLeft: 0,
+    swiperHide: true,
+    packup: true,
+    weeks: [],
+    classNumber: [],
+    nowCourse: [],
+    elseCourse: [],
+    unshowCourse: [],
+    swiperCourse: [],
+    chooseWeek: "",
+    timeLineTop: 73,
+    timeLineHide: true,
+    gradient: 12,
+    nowSection: 0,
+    chosenWeek: "",
+    chosenTerm: "",
+    days: ["周一", "周二", "周三", "周四", "周五", "周六", "周日"],
+    terms: [],
+    animationData: {},
+    swiperAnimation: {},
+    hideAnimation: {},
+    Day: "",
+    allCourseData: [],
+    shouldChangePassword: false
+  };
+
+  components = {
+    "change-password": ChangePassword
+  };
+
+  mixins = [ClassMixin, courseTimeMixin];
+
+  methods = {
+    scroll(e) {
+      // console.log(e);
+    },
+    putAway() {
+      let that = this;
+      const tap = async function() {
+        let animation = wepy.createAnimation({
+          duration: 100
+        });
+        let screenWidth;
+        if (that.packup === true) {
+          await wepy.getSystemInfo().then(res => {
+            screenWidth = parseInt((res.screenWidth / 750) * 128);
+          });
+          animation.translate(0, screenWidth).step();
+          that.packup = false;
+        } else {
+          animation.translate(0, 0).step();
+          that.packup = true;
+        }
+        that.animationData = animation.export();
+        that.$apply();
+      };
+      tap();
+    },
+    showCourse(e) {
+      let index = e.currentTarget.dataset.index;
+      let id = e.currentTarget.dataset.id;
+      let thisCourse = this.nowCourse[index][id];
+      this.swiperCourse.push(thisCourse);
+      for (let i of this.elseCourse[index]) {
+        if (
+          i.sectionstart === thisCourse.sectionstart &&
+          i.sectionend === thisCourse.sectionend
+        ) {
+          this.swiperCourse.push(i);
+        }
+      }
+      this.swiperHide = false;
+      this.$apply();
+      let that = this;
+      async function go() {
+        let animation = wepy.createAnimation({
+          duration: 250
+        });
+        let screenWidth;
+        await wepy.getSystemInfo().then(res => {
+          screenWidth = parseInt((res.screenWidth / -750) * 300);
+        });
+        animation.translate(0, screenWidth).step();
+        that.swiperAnimation = animation.export();
+        that.$apply();
+        let hideAnimation = wepy.createAnimation({
+          duration: 250
+        });
+        hideAnimation.opacity(1).step();
+        that.hideAnimation = hideAnimation.export();
+        that.$apply();
+      }
+      go();
+    },
+    async hideDetailCourse() {
+      let that = this;
+      let animation = wepy.createAnimation({
+        duration: 250
+      });
+      let screenWidth;
+      await wepy.getSystemInfo().then(res => {
+        screenWidth = parseInt((res.screenWidth / 750) * 300);
+      });
+      animation.translate(0, screenWidth).step();
+      that.swiperAnimation = animation.export();
+      let hideAnimation = wepy.createAnimation({
+        duration: 250
+      });
+      hideAnimation.opacity(0).step();
+      that.hideAnimation = hideAnimation.export();
+      that.$apply();
+      let timeout = setTimeout(() => {
+        that.swiperHide = true;
+        that.swiperCourse = [];
+        that.$apply();
+        clearTimeout(timeout);
+      }, 250);
+    },
+    changeWeek(e) {
+      this.chosenWeek = this.weeks[e.currentTarget.dataset.index];
+      this.chooseWeek = parseInt(e.currentTarget.dataset.index + 1);
+      let dealedCourse = this.handleCourses(
+        this.allCourseData,
+        this.chooseWeek
+      );
+      this.nowCourse = dealedCourse[0];
+      this.elseCourse = dealedCourse[1];
+      this.unshowCourse = dealedCourse[2];
+      this.changeOpa();
+      this.$apply();
+    },
+    async changeTerm(e) {
+      this.chosenTerm = e.requestTerm;
+      this.chooseItem = e.term;
+      const timetable = await api.timetable(e.requestTerm);
+      let dealedCourse = this.handleCourses(
+        timetable.data.data.timeTable,
+        this.chooseWeek
+      );
+      this.allCourseData = timetable.data.data.timeTable;
+      this.nowCourse = dealedCourse[0];
+      this.elseCourse = dealedCourse[1];
+      this.unshowCourse = dealedCourse[2];
+      this.changeOpa();
+      this.$apply();
+    }
+  };
+  getTerms() {
+    let that = this;
+    return new Promise(resolve => {
+      const nowYear = JSON.parse(wepy.getStorageSync("common")).year;
+      let year = nowYear.substr(0, 4);
+      let nowTerm = JSON.parse(wepy.getStorageSync("common")).semester;
+      that.chosenTerm = nowTerm;
+      for (let i = Number(year); i >= Number(year) - 2; i--) {
+        that.terms.unshift({
+          term: `${i}-${i + 1}学年 第二学期`,
+          requestTerm: `${i + 1}02`
+        });
+        that.terms.unshift({
+          term: `${i}-${i + 1}学年 第一学期`,
+          requestTerm: `${i}01`
+        });
+      }
+      if (JSON.parse(wepy.getStorageSync("common")).nextTerm) {
+        that.terms.push({
+          term:
+            nowTerm.substr(-1) === "1"
+              ? `${year}-${Number(year) + 1}学年 第二学期`
+              : `${Number(year) + 1}-${Number(year) + 2}学年 第二学期`,
+          requestTerm:
+            nowTerm.substr(-1) === "1"
+              ? `${Number(year) + 1}02`
+              : `${Number(year) + 2}01`
+        });
+      }
+      that.$apply();
+      resolve();
+    });
+  }
+  timeLine() {
+    return new Promise(resolve => {
+      let unit = parseFloat(111 / 45);
+      let courseTime = this.getCourseTime();
+      let nowHour = new Date().getHours();
+      let nowMinute = new Date().getMinutes();
+      if (nowHour < 8 || nowHour > 21 || (nowHour === 21 && nowMinute >= 5)) {
+        this.timeLineHide = true;
+        this.gradient = false;
+        if (nowHour < 8) {
+          this.nowSection = 0;
+        } else {
+          this.nowSection = 13;
+        }
+        return 0;
+      } else {
+        this.timeLineHide = false;
+        if (nowHour >= 12 && (nowHour < 13 && nowMinute <= 45)) {
+          this.timeLineTop += 5 * 118;
+          this.gradient = (this.timeLineTop / 1416).toString();
+        } else {
+          for (let i of courseTime) {
+            let now = Date.parse(new Date());
+            let start = new Date().setHours(i.start.hour, i.start.min, 0);
+            let end = new Date().setHours(i.end.hour, i.end.min, 0);
+            if (now >= start && now >= end) {
+              this.nowSection = i.section;
+              this.timeLineTop =
+                118 * (i.section - 1) +
+                unit *
+                  (nowHour * 60 + nowMinute - i.start.hour * 60 - i.start.min);
+              this.gradient = Math.ceil(~~((this.timeLineTop / 1416) * 100));
+            }
+            if (now >= start && now <= end) {
+              this.nowSection = i.section;
+              this.timeLineTop =
+                73 +
+                118 * (i.section - 1) +
+                unit *
+                  (nowHour * 60 + nowMinute - i.start.hour * 60 - i.start.min);
+              this.gradient = Math.ceil(~~((this.timeLineTop / 1416) * 100));
+              resolve();
+              return 0;
+            }
+          }
+        }
+      }
+      resolve();
+    });
+  }
+  changeOpa() {
+    for (let i in this.nowCourse) {
+      if (i < this.Day) {
+        for (let j of this.nowCourse[i]) {
+          j.opacity = 0.5;
+        }
+      }
+    }
+  }
+  async onLoad() {
+    const common = JSON.parse(wepy.getStorageSync("common"));
+    this.chooseWeek = Number(common.week) > 18 ? 1 : Number(common.week);
+    this.chosenWeek = Number(common.week) > 18 ? "第1周" : `第${common.week}周`;
+    await this.getTerms();
+    const allCourse = JSON.parse(wepy.getStorageSync("timetable"));
+    this.allCourseData = allCourse;
+    for (let i = 1; i <= 18; i++) {
+      this.weeks.push(`第${i}周`);
+    }
+    for (let i = 1; i <= 12; i++) {
+      this.classNumber.push(i);
+    }
+    this.terms.reverse();
+    let Day = new Date().getDay() === 0 ? 7 : new Date().getDay();
+    this.Day = parseInt(Day - 1);
+    let dealedCourse = this.handleCourses(allCourse, this.chooseWeek);
+    this.nowCourse = dealedCourse[0];
+    this.elseCourse = dealedCourse[1];
+    this.unshowCourse = dealedCourse[2];
+    this.changeOpa();
+    this.$apply();
+    await this.timeLine();
+    for (let i of this.nowCourse[this.Day]) {
+      if (this.nowSection > i.sectionend) {
+        i.opacity = 0.5;
+      }
+    }
+    this.$apply();
+  }
+  async onPullDownRefresh() {
+    const allCourse = await api.timetable();
+    this.allCourseData = allCourse.data.data;
+    const dealedCourse = this.handleCourses(
+      allCourse.data.data.timetable,
+      this.chooseWeek
+    );
+    this.nowCourse = dealedCourse[0];
+    this.elseCourse = dealedCourse[1];
+    this.unshowCourse = dealedCourse[2];
+    this.changeOpa();
+    this.$apply();
+  }
+}
+</script>
+
+<style lang="stylus" scoped>
+@import '../assets/stylus/main'
+
+.hide-page
+  position fixed
+  width 100%
+  height 100%
+  background rgba(0, 0, 0, 0.5)
+  z-index 500
+
+.swiper-thing
+  position fixed
+  width 750rpx
+  height 300rpx
+  bottom -300rpx
+  z-index 500
+  .swiper-item
+    position absolute
+    height 233rpx
+    bottom 20rpx
+    left 16rpx
+    width 718rpx
+    border-radius 10rpx
+    background linear-gradient(-41deg, rgba(243, 116, 226, 0.02), 62%, rgba(87, 200, 237, 0.02))
+    background rgb(255, 255, 255)
+    box-shadow 0 4rpx 20rpx 0 rgba(11, 3, 5, 0.1)
+    opacity 0.93
+    z-index 202
+    display flex
+    justify-content center
+    align-items center
+    align-content center
+    .course-container
+      display flex
+      justify-content center
+      flex-direction column
+      height 137rpx
+      width 642rpx
+      .course-name
+        font-size title-font-size
+        font-weight 700
+        color rgb(255, 134, 147)
+      .course-info
+        display flex
+        margin-top 16rpx
+        font-size 28rpx
+        flex-wrap wrap
+        justify-content center
+        align-items center
+        span
+          font-weight bold
+        .detail-info
+          width 50%
+  .swiper-behind-first
+    position absolute
+    bottom 57rpx
+    left 37rpx
+    width 676rpx
+    height 210rpx
+    border-radius 10rpx
+    opacity 0.7
+    box-shadow 0 4rpx 20rpx 0 rgba(11, 3, 5, 0.1)
+    background #fff
+    z-index 201
+  .swiper-behind-second
+    position absolute
+    bottom 69rpx
+    left 54rpx
+    width 642rpx
+    height 210rpx
+    border-radius 10rpx
+    opacity 0.4
+    box-shadow 0 4rpx 20rpx 0 rgba(11, 3, 5, 0.1)
+    background #fff
+    z-index 200
+
+.course
+  position relative
+  width 750rpx
+  overflow hidden
+  min-height 100vh
+  .animation-button
+    position absolute
+    height 64rpx
+    width 190rpx
+    display flex
+    align-items center
+    z-index 100
+    .animation-button-image
+      margin-left 35rpx
+      margin-right 23rpx
+      width 31rpx
+      height 31rpx
+      background-image url('https://static.airbob.org/image/page/Course/setting.png')
+      background-repeat no-repeat
+      background-position center
+      background-size contain
+  .chooseItem
+    position absolute
+    top 0
+    background #EEEEEE
+    width 750rpx
+    height 130rpx
+    font-size 26rpx
+    .choose-item-container
+      width 750rpx
+      height 64rpx
+      display flex
+      justify-content center
+      align-items center
+      .change-choose
+        display flex
+        width 190rpx
+        height 64rpx
+        align-items center
+        .image-container
+          display inline-block
+          width 31rpx
+          height 31rpx
+          margin-left 35rpx
+          margin-right 23rpx
+          background-size contain
+          background-repeat no-repeat
+          background-position center
+        .change-container
+          height 64rpx
+          line-height 64rpx
+          border-bottom 1rpx solid rgb(229, 229, 229)
+      .topScroll
+        display inline-block
+        width 560rpx
+        white-space nowrap
+        height 64rpx
+        border-bottom 1rpx solid rgb(229, 229, 229)
+        .course-choose
+          display inline-block
+          height 64rpx
+          color rgb(139, 139, 139)
+          line-height 64rpx
+          margin-left 26rpx
+  .main
+    position relative
+    width 750rpx
+    overflow hidden
+    .main-scroll
+      width 750rpx
+      overflow hidden
+      font-size 26rpx
+      color rgb(139, 139, 139)
+      .lines
+        width 882rpx
+        height 117rpx
+        display flex
+        align-items center
+        overflow hidden
+      .lines-top
+        position relative
+        width 960rpx
+        height 2rpx
+        display flex
+        align-items center
+        // transform scale(2, 0.3)
+        background #b2b2b2
+        z-index 100
+        overflow hidden
+    .lines_1
+      width 882rpx
+      padding-left 78rpx
+      height 73rpx
+      display flex
+      align-items center
+      justify-content center
+      text-align center
+      .top-line
+        height 73rpx
+        width 960rpx
+        line-height 73rpx
+        z-index 0
+    .cover-column
+      position absolute
+      left 78rpx
+      width 882rpx
+      height 1416rpx
+      .column
+        display inline-block
+        width 126rpx
+        height 1416rpx
+        z-index -200
+        .course-item
+          position absolute
+          display flex
+          justify-content space-around
+          align-items center
+          flex-direction column
+          width 114rpx
+          margin-left 6rpx
+          border-radius 10rpx
+          font-size 24rpx
+          color #fff
+          z-index 200
+          .class-name
+            width 95rpx
+            overflow hidden
+            text-align center
+            left 10rpx
+            top 14rpx
+            overflow hidden
+          .classroom
+            bottom 14rpx
+            width 100%
+            text-align center
+        .timeline
+          position absolute
+          top 73rpx
+          width 137rpx
+          margin-left -5rpx
+          height 6rpx
+          z-index 105
+          background #000
+    .column_1
+      position absolute
+      top 73rpx
+      width 78rpx
+      height 1416rpx
+      display flex
+      flex-direction column
+      justify-content center
+      align-items center
+      align-content center
+      text-align center
+      .left-column
+        text-align center
+        height 118rpx
+        line-height 118rpx
+</style>

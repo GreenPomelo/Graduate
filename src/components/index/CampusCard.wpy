@@ -1,0 +1,146 @@
+<template lang="pug">
+view.campus-card
+  panel(title="校园卡")
+    view.wrapper
+      card.card
+        view.header
+          view.balance-wrapper(wx:if="{{serviceable}}")
+            view.desc 余额
+            view.balance
+              text.number {{balance}}
+              text.unit 元
+          view.stop-serve(wx:else) 暂停服务
+          view.date 截止到 {{date}}
+        view.footer(slot="footer")
+          view.record-time {{record.time}}
+          view.record-text {{record.text}}
+          view.more( @tap="navigateTo('campusCard')") 更多详情
+
+        view.decoration-1(slot="decoration")
+          view.item-1
+          view.item-2
+          view.item-3
+          view.item-4
+          view.item-5
+          view.item-6
+        view.decoration-2(slot="decoration")
+          view.item-1
+          view.item-2
+          view.item-3
+          view.item-4
+          view.item-5
+          view.item-6
+</template>
+
+<script>
+import wepy from "wepy";
+import Panel from "@/components/panel";
+import Card from "@/components/card/Card";
+import navigateMixin from "@/mixins/navigate";
+
+export default class CampusCard extends wepy.component {
+  props = {
+    serviceable: Boolean,
+    balance: Number,
+    date: String,
+    record: Object
+  };
+
+  data = {
+    // serviceable: true
+  };
+
+  components = {
+    panel: Panel,
+    card: Card
+  };
+
+  mixins = [navigateMixin];
+}
+</script>
+
+<style lang="stylus" scoped>
+@import '../../assets/stylus/main';
+
+.card
+  {card-bg-color-7}
+
+.wrapper
+  display flex
+  justify-content center
+
+.header
+  display flex
+  .balance-wrapper
+    flex 1
+    margin-top 46rpx
+    .desc
+      font-size subtitle-font-size
+      font-weight 300
+      color main-color
+    .balance
+      margin-top 10rpx
+      .number
+        line-height number-font-size
+        font-size number-font-size
+        font-weight 700
+        color #ffa200
+      .unit
+        margin-left 10rpx
+        {sub-font}
+  .stop-serve
+    flex 1
+    margin-top 64rpx
+    font-size number-font-size
+    font-weight 700
+    color #ffa200
+  .date
+    flex 0 0 240rpx
+    margin-top 120rpx
+    font-size sub-font-size
+    font-weight 300
+    color main-color
+
+.footer
+  display flex
+  width 100%
+  justify-content space-between
+  align-items center
+  .record-time
+    flex 0 0 50rpx
+    font-size sub-font-size
+    font-weight 300
+    color main-color
+    text-align center
+  .record-text
+    padding-left 12rpx
+    flex 1
+    font-size sub-font-size
+    font-weight 700
+    color main-color
+  .more
+    flex 0 0 120rpx
+    padding 20rpx 10rpx
+    font-size sub-font-size
+    color sub-color
+
+[class ^= 'decoration']
+  display flex
+  position absolute
+  align-items flex-end
+  for index in (1 .. 6)
+    .item-{index}
+      width 40rpx
+      height (50 + random(0, 50))px
+      background rgba(255, 255, 255, (random(3, 8) / 10))
+
+.decoration-1
+  top -50rpx
+  right -30rpx
+  transform rotate(-155deg)
+
+.decoration-2
+  bottom -50rpx
+  left -30rpx
+  transform rotate(25deg)
+</style>

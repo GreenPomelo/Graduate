@@ -1,0 +1,122 @@
+<script>
+import wepy from "wepy";
+import "wepy-async-function";
+
+export default class extends wepy.app {
+  config = {
+    pages: [
+      "pages/index",
+      "pages/login",
+      "pages/more",
+      "pages/news",
+      "pages/profile",
+      "pages/library",
+      "pages/campusCard",
+      "pages/course",
+      "pages/score",
+      "pages/message",
+      "pages/changelog",
+      "pages/helpCenter",
+      "pages/question",
+      "pages/feedback",
+      "pages/rechargeCard",
+      "pages/rechargeInternetFee",
+      "pages/rechargeElecFee",
+      "pages/close",
+      "pages/calendar",
+      "pages/questionnaire-homepage",
+      "pages/questionnaire",
+      "pages/aboutus",
+      "pages/protocol"
+    ],
+    window: {
+      backgroundTextStyle: "light",
+      navigationBarBackgroundColor: "#fff",
+      navigationBarTitleText: "NJUPT",
+      navigationBarTextStyle: "white"
+    },
+    tabBar: {
+      color: "#aaa",
+      selectedColor: "#000",
+      list: [
+        {
+          pagePath: "pages/index",
+          text: "首页",
+          selectedIconPath: "./assets/images/tabBar/home.png",
+          iconPath: "./assets/images/tabBar/homex.png"
+        },
+        {
+          pagePath: "pages/more",
+          text: "功能",
+          selectedIconPath: "./assets/images/tabBar/tool.png",
+          iconPath: "./assets/images/tabBar/toolx.png"
+        },
+        {
+          pagePath: "pages/news",
+          text: "资讯",
+          selectedIconPath: "./assets/images/tabBar/news.png",
+          iconPath: "./assets/images/tabBar/newsx.png"
+        },
+        {
+          pagePath: "pages/profile",
+          text: "我的",
+          selectedIconPath: "./assets/images/tabBar/me.png",
+          iconPath: "./assets/images/tabBar/mex.png"
+        }
+      ]
+    }
+  };
+
+  globalData = {
+    userInfo: null,
+    requestUrl: "https://wechat.njupt.edu.cn/",
+    // 真实地址
+    // requestUrl: "https://qingyou.njupt.edu.cn/mini_program/",
+    // 测试地址
+    module: {}
+  };
+
+  constructor() {
+    super();
+    this.use("requestfix");
+    this.use("promisify");
+
+    this.intercept("request", {
+      config(request) {
+        let token;
+        if ((token = wepy.getStorageSync(`token`))) {
+          request.header = {
+            Cookie: `session_id=${token}; token=${wepy.getStorageSync(
+              "questionnaire_token"
+            )}`
+          };
+        }
+        return request;
+      }
+    });
+  }
+
+  getUserInfo(cb) {
+    const that = this;
+    if (this.globalData.userInfo) {
+      return this.globalData.userInfo;
+    }
+    wepy.getUserInfo({
+      success(res) {
+        that.globalData.userInfo = res.userInfo;
+        cb && cb(res.userInfo);
+      }
+    });
+  }
+}
+</script>
+
+<style lang="stylus">
+@import './assets/stylus/main'
+
+.container
+  margin 0
+  padding 0
+  box-sizing border-box
+  color #1a1a1a
+</style>

@@ -1,0 +1,207 @@
+<template lang="pug">
+  view
+    top(avatar='https://static.airbob.org/image/page/Score/exam1.png', hideimage='https://static.airbob.org/image/page/Score/exam2.png', hidewidth='306rpx', hideheight='366rpx', bgcolor='linear-gradient(to right, rgb(97,219,146), rgb(125,233,152) 96%, rgb(146,243,155))', avatarheight='131rpx', avatarwidth='114rpx', hideright='72rpx', tohide='true')
+    view.score-main
+      view.score-main-left
+        view.score-main-top 总学分
+        view.score-main-all {{total}}
+      view.score-main-right
+        view
+          span.score-teacher 导师：
+          | {{teacher}}
+        view
+          span.score-teacher 方向：
+          | {{direction}}
+      view.score-update 数据更新至：{{date}}
+    view.fuc 学分情况
+    view.credit-status
+      repeat(for='{{classes}}', key='key', index='index', item='item')
+        view.credit-status-detail(style="border-right: {{index === 2 ? 'none' : 'solid 1rpx rgb(210, 210, 210)'}}")
+          view.credit-number {{credit[index]}}
+          view {{item}}
+      image.credit-status-bg(src='https://static.airbob.org/image/page/Score/card_bg.png', mode='aspectFit')
+    view.line-contain
+      view.rec 学期成绩
+    repeat(for='{{records}}', key='key', index='index', item='item')
+      record( :record='item')
+
+    change-password(wx:if="{{shouldChangePassword}}" type="score" :shouldShow.sync="shouldChangePassword")
+</template>
+
+<script>
+import wepy from "wepy";
+import Top from "@/components/card/Top";
+import Recharge from "@/components/card/recharge";
+import Record from "@/components/card/record";
+import ChangePassword from "@/components/card/ChangePassword";
+
+export default class score extends wepy.page {
+  config = {
+    navigationBarTitleText: "成绩查询",
+    navigationBarBackgroundColor: "#64DC92",
+    navigationBarTextStyle: "white"
+  };
+
+  data = {
+    classes: ["学位课", "非学位课", "专业学位课"],
+    credit: ["0", "0", "0"],
+    records: [],
+    teacher: "",
+    total: "0",
+    direction: "",
+    date: "",
+    shouldChangePassword: false
+  };
+
+  components = {
+    top: Top,
+    recharge: Recharge,
+    record: Record,
+    "change-password": ChangePassword
+  };
+
+  init() {
+    let date = new Date();
+    this.date = `${date.getFullYear()}.${date.getMonth() +
+      1}.${date.getDate()} ${date.getHours()}:${date.getMinutes()}`;
+    wepy
+      .request({
+        url: this.$parent.globalData.requestUrl + "crawl/my/grade"
+      })
+      .then(res => {
+        if (res.data.success) {
+          let data = res.data.data;
+          this.credit = [
+            data.degreeCourse,
+            data.noDegreeCourse,
+            data.proDegreeCourse
+          ];
+          this.teacher = data.teacher === "" ? "暂无" : data.teacher;
+          this.total = data.total;
+          this.direction = data.direction || "暂无";
+          data.exams.forEach(element => {
+            if (element.remark === "已完成") {
+              this.records.push({
+                text: element.name.split("&")[0],
+                details: [element.code, element.teacher, element.credit],
+                type: element.type,
+                score: element.result,
+                level:
+                  element.result >= 90
+                    ? 1
+                    : element.result >= 75
+                      ? 2
+                      : element.result >= 60
+                        ? 3
+                        : 4
+              });
+            }
+          });
+        } else {
+          this.shouldChangePassword = true;
+        }
+        this.$apply();
+      });
+  }
+  onLoad() {
+    this.init();
+  }
+}
+</script>
+
+<style lang="stylus" scoped>
+@import '../assets/stylus/main'
+
+.fuc
+  position absolute
+  line-height 40rpx
+  font-size title-font-size
+  font-weight 700
+  top 438rpx
+  left 44rpx
+  margin-top -23rpx
+
+.line-contain
+  height 40rpx
+  margin-top 48rpx
+  margin-left 44rpx
+  margin-bottom 46rpx
+
+.rec
+  float left
+  line-height 40rpx
+  font-size title-font-size
+  font-weight 700
+
+.score-main
+  position absolute
+  width 450rpx
+  height 158rpx
+  top 99rpx
+  left 214rpx
+  z-index 10
+  .score-main-left
+    float left
+    width 197rpx
+    height 102rpx
+    border-right 3rpx solid rgb(139, 139, 139)
+    .score-main-top
+      position relative
+      line-height 36rpx
+      font-size 28rpx
+      color rgb(139, 139, 139)
+    .score-main-all
+      margin-top 19rpx
+      position relative
+      line-height 36rpx
+      font-size 80rpx
+      font-weight 700
+      color rgb(12, 79, 25)
+  .score-main-right
+    float left
+    margin-top 24rpx
+    margin-left 27rpx
+    font-size 28rpx
+    color rgb(12, 79, 25)
+    .score-teacher
+      color rgb(139, 139, 139)
+  .score-update
+    float left
+    margin-top 27rpx
+    line-height 36rpx
+    font-size 28rpx
+    color rgb(27, 27, 27)
+
+.credit-status
+  position relative
+  display flex
+  justify-content center
+  align-items center
+  margin 50rpx auto 0 auto
+  width 660rpx
+  height 246rpx
+  background linear-gradient(-41deg, rgba(0, 174, 255, 0.02), rgba(11, 239, 70, 0.02) 62%, rgb(255, 255, 255))
+  border-radius 20rpx
+  box-shadow 0 0rpx 9rpx 0 rgba(11, 3, 5, 0.1)
+  .credit-status-bg
+    position absolute
+    z-index -1
+    left 0
+    bottom 0
+    width 660rpx
+    height 100rpx
+    border-bottom-left-radius 20rpx
+    border-bottom-right-radius 20rpx
+  .credit-status-detail
+    flex 1
+    font-size 28rpx
+    color rgb(139, 139, 139)
+    text-align center
+    height 100rpx
+    line-height 60rpx
+    width 100%
+    .credit-number
+      font-size 60rpx
+      line-height 60rpx
+      color rgb(16, 138, 26)
+</style>

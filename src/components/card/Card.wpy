@@ -1,0 +1,57 @@
+<template lang="pug">
+view.card(class="{{isPressed}}" @tap="tap" @touchstart="touchStart" @touchend="touchEnd")
+  view.header-wrapper
+    slot
+  view.footer-wrapper
+    view.border
+    slot(name="footer")
+  slot(name="decoration")
+</template>
+
+<script>
+import wepy from "wepy";
+import cardMixin from "@/mixins/card";
+
+export default class Card extends wepy.component {
+  mixins = [cardMixin];
+}
+</script>
+
+<style lang="stylus" scoped>
+@import '../../assets/stylus/main'
+
+.card
+  {card}
+  display flex
+  padding 0 40rpx
+  width 676rpx
+  height 330rpx
+  flex-direction column
+  justify-content space-between
+  &.pressed
+    box-shadow none
+
+.header-wrapper
+  position relative
+  z-index 1
+  flex 0 0 210rpx
+
+.footer-wrapper
+  display flex
+  position relative
+  z-index 1
+  width 100%
+  flex 1
+  align-items center
+
+.border
+  position absolute
+  top 0
+  left 150rpx
+  width 50%
+  height 1rpx
+  background #fff
+  box-sizing border-box
+  border 1px dashed #a0a0a0
+  transform: scale(2, 0.2)
+</style>

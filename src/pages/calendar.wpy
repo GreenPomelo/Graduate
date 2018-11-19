@@ -1,0 +1,19 @@
+<template lang="pug">
+view
+  image.img(src='https://static.airbob.org/under-graduate/1503819958_7e641fc044ef762755f2dffe9cee0f17.jpg', mode='widthFix')
+</template>
+
+<script>
+import wepy from "wepy";
+
+export default class Calendar extends wepy.page {
+  config = {
+    navigationBarTitleText: "校历"
+  };
+}
+</script>
+
+<style lang="stylus" scoped>
+.img
+  width 100vw
+</style>

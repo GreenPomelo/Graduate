@@ -1,0 +1,168 @@
+<template lang="pug">
+view.recharge
+  view.header
+    view.wrapper
+      image.image(src="https://static.airbob.org/image/page/campusCard/card-2.png" mode="widthFix")
+      view.title 网费充值
+      view.balance
+        | 城市热点余额：
+        span.number {{balance}}
+        | 元
+  view.container
+    view.recharge-method
+      view.title 充值选择
+      view.account
+        text.label 充值账号
+        text.text 卡账户
+      line(marginLeft="10%")
+      view.method
+        text.label 支付方式
+        text.text 校园卡转账
+      line(marginLeft="10%")
+
+    recharge-amount( :amount="amount")
+    view.recharge-btn( @tap="handleClickOnRechargeBtn") 确认充值
+  pay-flow( :open.sync="isPayModalOpen" :charge.sync="charge" type="net" payWay="校园卡转账" operateContent="校园卡转账" )
+</template>
+
+<script>
+import wepy from "wepy";
+import RechargeAmount from "../components/recharge/RechargeAmount";
+import Line from "../components/Line";
+import payFlow from "../components/recharge/pay-flow";
+import { request } from "@/utils/utils.js";
+
+export default class Recharge extends wepy.page {
+  config = {
+    navigationBarTitleText: "网费充值",
+    navigationBarBackgroundColor: "#ffd323",
+    navigationBarTextStyle: "white"
+  };
+
+  data = {
+    placeholderStyles: `
+      font-size: 28rpx;
+      line-height: 78rpx;
+      text-align: right;
+    `,
+    balance: 0,
+    amount: 0,
+    amountBtns: [
+      { amount: 20, isActive: true },
+      { amount: 50, isActive: false },
+      { amount: 100, isActive: false },
+      { amount: 200, isActive: false }
+    ],
+    isPayModalOpen: false,
+    charge: ""
+  };
+
+  components = {
+    "recharge-amount": RechargeAmount,
+    line: Line,
+    "pay-flow": payFlow
+  };
+
+  methods = {
+    handleAmountInput(event) {
+      const { value } = event.detail;
+      this.amount = Number(value) || 0;
+      const activeBtn = this.amountBtns.find(x => x.isActive === true);
+      if (activeBtn !== undefined) activeBtn.isActive = false;
+    },
+    handleClickAmountBtn(amount) {
+      this.amount = amount;
+      this.amountBtns.map(x => (x.isActive = x.amount === amount));
+    },
+    handleClickOnRechargeBtn() {
+      if (this.amount !== 0) {
+        this.isPayModalOpen = true;
+        this.putCharge(this.amount);
+      }
+    }
+  };
+  putCharge(number) {
+    this.charge = number;
+  }
+  async onLoad() {
+    const getBalance = await request({
+      url: this.$parent.globalData.requestUrl + "crawl/ykt/balance/net",
+      method: "POST"
+    });
+    this.balance = parseFloat(getBalance.data.data / 100);
+    this.$apply();
+  }
+}
+</script>
+
+<style lang="stylus" scoped>
+@import '../assets/stylus/main'
+
+.recharge
+  padding-bottom 40rpx
+  color #1b1b1b
+  .line
+    {line}
+  .header
+    position relative
+    height 134rpx
+    background #ffd323
+    .wrapper
+      position absolute
+      bottom -74rpx
+      left 35rpx
+      padding-left 44rpx
+      width 680rpx
+      height 148rpx
+      border-radius 20rpx
+      box-sizing border-box
+      overflow hidden
+      box-shadow 0 -4rpx 20rpx 0 rgba(11, 3, 5, 0.1)
+      background-color #fff
+      .image
+        position absolute
+        right -120rpx
+        top 10rpx
+        width 350rpx
+      .title
+        margin-top 36rpx
+        line-height 36rpx
+        font-size 36rpx
+        font-weight 700
+      .balance
+        margin-top 16rpx
+        font-size 28rpx
+        line-height 28rpx
+        color #bdbdbd
+        .number
+          color #ff5a00
+  .container
+    margin 122rpx 48rpx 48rpx 48rpx
+    .recharge-method
+      .title
+        font-size title-font-size
+        line-height title-font-size
+        font-weight 700
+    .recharge-method
+      .account,
+      .method
+        display flex
+        height 72rpx
+        font-size sub-font-size
+        justify-content space-between
+        align-items center
+      .account
+        margin-top 18rpx
+      .label
+        color sub-color
+    .recharge-btn
+      margin 48rpx 0 0 6rpx
+      width 642rpx
+      height 72rpx
+      font-size sub-font-size
+      line-height 72rpx
+      text-align center
+      border-radius 20rpx
+      box-sizing border-box
+      background #ffd323
+</style>

@@ -1,0 +1,92 @@
+<template lang="pug">
+view.more
+  view.col.col-left
+    view.func.card( @tap="navigateTo('campusCard')")
+      image.img(src="https://static.airbob.org/image/page/more/card.png" mode="aspectFit")
+      text.title 校园卡
+      text.subtitle Card
+    view.func.library( @tap="navigateTo('library')")
+      image.img(src="https://static.airbob.org/image/page/more/library.png" mode="aspectFit")
+      text.title 图书馆
+      text.subtitle Library
+    view.func.questionnaire( @tap="navigateTo('questionnaire-homepage')")
+      image.img(src="https://static.airbob.org/image/page/morequestionnaire.png" mode="aspectFit")
+      text.title 问卷
+      text.subtitle Questionnaire
+
+  view.col.col-right
+    view.func.timetable( @tap="navigateTo('course')")
+      image.img(src="https://static.airbob.org/image/page/more/timetable.png" mode="aspectFit")
+      text.title 课程表
+      text.subtitle Timetable
+    view.func.score( @tap="navigateTo('score')")
+      image.img(src="https://static.airbob.org/image/page/more/score.png" mode="aspectFit")
+      text.title 成绩
+      text.subtitle Score
+</template>
+
+<script>
+import wepy from "wepy";
+import navigateMixin from "@/mixins/navigate";
+
+export default class more extends wepy.page {
+  config = {
+    navigationBarTitleText: "NJUPT",
+    navigationBarBackgroundColor: "#00ca8f",
+    navigationBarTextStyle: "white"
+  };
+
+  mixins = [navigateMixin];
+}
+</script>
+
+<style lang="stylus" scoped>
+@import '../assets/stylus/main'
+
+.more
+  display flex
+  margin 32rpx 32rpx 0 32rpx
+  padding-bottom 40rpx
+  color main-color
+  justify-content space-between
+  .col
+    flex 1
+    &.col-right
+      margin-left 24rpx
+  .func
+    position relative
+    margin-bottom 24rpx
+    padding 32rpx
+    width 100%
+    height 230rpx
+    border-radius 16rpx
+    box-sizing border-box
+    overflow hidden
+    .title
+      display block
+      position relative
+      font-size title-font-size
+      font-weight 700
+    .subtitle
+      display block
+      position relative
+      font-size sub-font-size
+      color sub-color
+    .img
+      position absolute
+      right -30%
+      bottom -40%
+      width 130%
+      height 130%
+      z-index 0
+  .card
+    background rgb(255, 226, 26)
+  .timetable
+    background rgb(0, 230, 189)
+  .library
+    background rgb(80, 206, 253)
+  .score
+    background rgb(81, 239, 145)
+  .questionnaire
+    background #ffb6d3
+</style>
